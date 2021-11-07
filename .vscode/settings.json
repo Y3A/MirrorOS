@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "memory.h": "c",
+        "kernel.h": "c",
+        "kheap.h": "c",
+        "heap.h": "c"
+    }
+}
