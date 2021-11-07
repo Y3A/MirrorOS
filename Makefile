@@ -40,5 +40,5 @@ all: $(BINS)
 	i686-elf-gcc $(INCLUDES) $(FLAGS) ./src/memory/heap/kheap.c -c -o ./build/memory/heap/kheap.o
 
 clean:
-	rm -rf ./bin/*
+	rm -rf $(BINS) ./bin/os.bin
 	rm -rf $(LINKS) ./build/kernelfull.o
