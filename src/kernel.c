@@ -4,6 +4,7 @@
 #include "kernel.h"
 #include "idt/idt.h"
 #include "io/io.h"
+#include "memory/paging/paging.h"
 #include "memory/heap/kheap.h"
 
 int cur_x, cur_y;
@@ -70,11 +71,18 @@ void terminal_write(const char * str, char colour)
         terminal_writechar(str[i], colour);
 }
 
+static PPAGE_CHUNK kernel_pagechunk = NULL;
+
 void kernel_main(void)
 {
     terminal_init();
     kheap_init();
     idt_init();
+    
+    // setup paging
+    kernel_pagechunk = new_page_chunk(PAGING_RDWR | PAGING_IS_PRESENT | PAGING_USER_ACCESS);
+    paging_switch_dir(kernel_pagechunk->pagedir_entry);
+    paging_enable();
 
     __asm__("sti;"); // enable interrupts
     
