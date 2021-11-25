@@ -11,8 +11,6 @@
 #define HEAP_START 0x1000000
 #define HEAP_MAX 0x2000000
 
-#define HEAP_FREE_CHUNK_STORAGE 0x2000000
-
 #define PREV_INUSE 1
 
 #define chunksize_nomask(s) ((s) &~ PREV_INUSE)

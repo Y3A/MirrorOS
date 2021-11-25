@@ -1,8 +1,4 @@
-#include <stdint.h>
-#include <stddef.h>
 #include "memory.h"
-
-uint32_t * cur_mmap = (uint32_t *)MMAP_START;
 
 void * memset(void * ptr, int c, size_t size)
 {
@@ -13,10 +9,24 @@ void * memset(void * ptr, int c, size_t size)
     return (void *)base;
 }
 
-void * mmap(size_t size)
+void * page_alloc(void)
 {
-    uint32_t * old = cur_mmap;
-    cur_mmap += size;
+    char * start = (char *)PAGE_ALLOC_TABLE;
+    for ( int i = 0; i < MAX_PAGE_IDX; i++ )
+    {
+        if ( *(start + i) == 0)
+        {
+            *(start + i) = 1;
+            return (void *)(PAGE_ALLOC_START + (PAGE_SZ * i));
+        }
+    }
+    return NULL;
+}
 
-    return old; 
+void page_free(void * page)
+{
+    char * start = (char *)PAGE_ALLOC_TABLE;
+    for ( int i = 0; i < MAX_PAGE_IDX; i++ )
+        if ( (start + (i * PAGE_SZ)) == (char *)page )
+            *(start + i) = 0;
 }
