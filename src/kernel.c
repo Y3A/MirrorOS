@@ -81,7 +81,9 @@ void kernel_main(void)
     
     // setup paging
     kernel_pagechunk = new_page_chunk(PAGING_RDWR | PAGING_IS_PRESENT | PAGING_USER_ACCESS);
-    paging_switch_dir(kernel_pagechunk->pagedir_entry);
+    paging_switch_dir(kernel_pagechunk->pagedir);
+
+    // enable paging
     paging_enable();
 
     __asm__("sti;"); // enable interrupts

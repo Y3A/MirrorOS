@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 #define PAGING_CACHE_DISABLED 0b10000
 #define PAGING_WRITE_THROUGH  0b01000
@@ -16,8 +17,14 @@
 
 typedef struct
 {
-    uint32_t * pagedir_entry;
+    uint32_t * pagedir;
 } PAGE_CHUNK, * PPAGE_CHUNK;
+
+// return pagetable and pagedir index in the args supplied
+int paging_get_idx(void * vaddr, uint32_t * pagedir_idx, uint32_t * pagetable_idx);
+bool paging_is_aligned(void * addr);
+// populate a pagetable entry so that vaddr points to physaddr
+int pagetable_set_entry(uint32_t * pagedir, void * vaddr, uint32_t physaddr_flags);
 
 PPAGE_CHUNK new_page_chunk(uint8_t flags);
 void paging_switch_dir(uint32_t * pagedir);
