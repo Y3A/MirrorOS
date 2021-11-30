@@ -8,4 +8,6 @@
 
 #define KERNEL_HEAP_FREE_BIN_HEAD 0x00007E00
 
+#define SECTOR_SZ 512
+
 #endif

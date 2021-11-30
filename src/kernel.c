@@ -2,6 +2,7 @@
 #include <stddef.h>
 
 #include "kernel.h"
+#include "disk/disk.h"
 #include "idt/idt.h"
 #include "io/io.h"
 #include "memory/paging/paging.h"
@@ -75,9 +76,10 @@ static PPAGE_CHUNK kernel_pagechunk = NULL;
 
 void kernel_main(void)
 {
-    terminal_init();
-    kheap_init();
-    idt_init();
+    terminal_init(); // initialise terminal
+    kheap_init(); // initialise kernel heap
+    disk_search_init(); // initialise disks
+    idt_init(); // initialise IDT
     
     // setup paging
     kernel_pagechunk = new_page_chunk(PAGING_RDWR | PAGING_IS_PRESENT | PAGING_USER_ACCESS);
@@ -89,6 +91,17 @@ void kernel_main(void)
     __asm__("sti;"); // enable interrupts
     
     terminal_print("[+] All Initialised\n");
+
+    /* tests
+    
+    char * buf = page_alloc();
+    pagetable_set_entry(kernel_pagechunk->pagedir, (void *)0x400000, (uint32_t)buf | PAGING_IS_PRESENT | PAGING_RDWR | PAGING_USER_ACCESS);
+    char * start = (char *)0x400000;
+    start ++;
+    start --;
+    disk_read_block(disk_get(0), 0, 1, buf);
+
+    end tests */
 
     while (1);
 }
