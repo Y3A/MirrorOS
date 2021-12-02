@@ -30,3 +30,13 @@ void page_free(void * page)
         if ( (start + (i * PAGE_SZ)) == (char *)page )
             *(start + i) = 0;
 }
+
+int memcmp(void * s1, void * s2, int count)
+{
+    char * c1 = s1;
+    char * c2 = s2;
+    while (count-- > 0)
+        if (*c1++ != *c2++)
+            return c1[-1] < c2[-1] ? -1 : 1;
+    return 0;
+}

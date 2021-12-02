@@ -10,4 +10,6 @@
 
 #define SECTOR_SZ 512
 
+#define MAX_PATH 128
+
 #endif

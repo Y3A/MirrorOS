@@ -10,6 +10,7 @@
 #define PAGE_SZ 4096
 
 void * memset(void * ptr, int c, size_t size);
+int memcmp(void * s1, void * s2, int count);
 
 void * page_alloc(void);
 void page_free(void * page);

@@ -3,8 +3,10 @@
 
 #include "kernel.h"
 #include "disk/disk.h"
+#include "fs/path_parser.h"
 #include "idt/idt.h"
 #include "io/io.h"
+#include "string/string.h"
 #include "memory/paging/paging.h"
 #include "memory/heap/kheap.h"
 
@@ -22,13 +24,6 @@ void terminal_init(void)
 uint16_t terminal_make_char(char c, char colour)
 {
     return (colour << 8 | c);
-}
-
-size_t strlen(const char * str)
-{
-    size_t ptr = 0;
-    while (str[ptr++]) ;
-    return ptr;
 }
 
 void terminal_putchar(int x, int y, char c, char colour)
@@ -92,16 +87,26 @@ void kernel_main(void)
     
     terminal_print("[+] All Initialised\n");
 
-    /* tests
+    /* // tests
     
-    char * buf = page_alloc();
-    pagetable_set_entry(kernel_pagechunk->pagedir, (void *)0x400000, (uint32_t)buf | PAGING_IS_PRESENT | PAGING_RDWR | PAGING_USER_ACCESS);
-    char * start = (char *)0x400000;
-    start ++;
-    start --;
-    disk_read_block(disk_get(0), 0, 1, buf);
+    PPATH_ROOT root = parse("0:/bin////fish.sh", NULL);
+    if (root)
+    {
+        PPATH_PART start = root->first;
+        while (start)
+        {
+            terminal_print(start->part);
+            terminal_print("\n");
+            start = start->next;
+        }
+        path_cleanup(root);
+    }
+    else
+    {
+        terminal_warn("ERROR\n");
+    }
 
-    end tests */
+    // end tests */
 
     while (1);
 }

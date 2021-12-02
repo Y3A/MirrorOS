@@ -15,7 +15,6 @@ extern int cur_x, cur_y;
 
 void kernel_main(void);
 uint16_t terminal_make_char(char, char);
-size_t strlen(const char *);
 void terminal_putchar(int, int, char, char);
 void terminal_writechar(char, char);
 void terminal_print(const char *);
