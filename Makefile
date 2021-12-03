@@ -1,5 +1,5 @@
 BINS = ./bin/boot.bin ./bin/kernel.bin
-LINKS = ./build/kernel.asm.o ./build/kernel.o ./build/idt/idt.o ./build/memory/memory.o ./build/io/io.asm.o ./build/interrupts.asm.o ./build/memory/heap/heap.o ./build/memory/heap/kheap.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/disk/disk.o ./build/fs/path_parser.o ./build/string/string.o
+LINKS = ./build/kernel.asm.o ./build/kernel.o ./build/idt/idt.o ./build/memory/memory.o ./build/io/io.asm.o ./build/interrupts.asm.o ./build/memory/heap/heap.o ./build/memory/heap/kheap.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/disk/disk.o ./build/fs/path_parser.o ./build/string/string.o ./build/disk/streamer.o
 INCLUDES = -I./src
 FLAGS = -g -ffreestanding -falign-jumps -falign-functions -falign-labels -falign-loops -fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function -fno-builtin -Werror -Wno-unused-label -Wno-cpp -Wno-unused-parameter -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
 
@@ -53,6 +53,9 @@ all: $(BINS)
 
 ./build/string/string.o: ./src/string/string.c
 	i686-elf-gcc $(INCLUDES) $(FLAGS) ./src/string/string.c -c -o ./build/string/string.o
+
+./build/disk/streamer.o: ./src/disk/streamer.c
+	i686-elf-gcc $(INCLUDES) $(FLAGS) ./src/disk/streamer.c -c -o ./build/disk/streamer.o
 
 clean:
 	rm -rf $(BINS) ./bin/os.bin

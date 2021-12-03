@@ -3,6 +3,7 @@
 
 #include "kernel.h"
 #include "disk/disk.h"
+#include "disk/streamer.h"
 #include "fs/path_parser.h"
 #include "idt/idt.h"
 #include "io/io.h"
@@ -89,22 +90,10 @@ void kernel_main(void)
 
     /* // tests
     
-    PPATH_ROOT root = parse("0:/bin////fish.sh", NULL);
-    if (root)
-    {
-        PPATH_PART start = root->first;
-        while (start)
-        {
-            terminal_print(start->part);
-            terminal_print("\n");
-            start = start->next;
-        }
-        path_cleanup(root);
-    }
-    else
-    {
-        terminal_warn("ERROR\n");
-    }
+    PSTREAM stream = new_streamer(0);
+    streamer_seek(stream, 0x1387);
+    char str[40];
+    streamer_read(stream, str, 20);
 
     // end tests */
 
