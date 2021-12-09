@@ -25,3 +25,12 @@ int char2int(char c)
 {
     return c - 48;
 }
+
+char * strcpy(char * dest, const char * src)
+{
+    while (*src)
+        *(dest++) = *(src++);
+    *dest = 0;
+    
+    return dest;
+}

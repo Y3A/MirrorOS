@@ -32,6 +32,8 @@ void disk_search_init(void)
     memset(&curdisk, 0, sizeof(curdisk));
     curdisk.type = DISK_REAL;
     curdisk.sector_size = SECTOR_SZ;
+    curdisk.id = 0;
+    curdisk.fs = fs_resolve(&curdisk);
 }
 
 PDISK disk_get(int idx)

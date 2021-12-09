@@ -12,4 +12,8 @@
 
 #define MAX_PATH 128
 
+#define MAX_FS 12
+
+#define MAX_FD 512
+
 #endif

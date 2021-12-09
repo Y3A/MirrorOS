@@ -10,7 +10,31 @@ GDT_DATA equ 10000b ; index 2 in GDT, 0 for GDT and 00 for privileged
 jmp short set_cs
 nop
 
-times 33 db 0 ; BIOS parameter block buffer
+; BIOS parameter block
+
+; FAT16 header
+db "MIRROROS"    ; OEMIdentifier, garbage
+dw 512           ; BytesPerSector
+db 128           ; SectorsPerCluster
+dw 200           ; 200 reserved sectors for kernel
+db 2             ; number of FATs, 1 orig and 1 backup
+dw 64            ; number of directory entries
+dw 0             ; total number of sectors ( unused )
+db 0xf8          ; MediaDescriptor
+dw 256           ; number of sectors per FAT
+dw 01            ; number of sectors per track ( unused )
+dw 01            ; number of heads ( unused )
+dd 0             ; number of hidden sectors
+dd 1000000       ; total number of sectors ( used )
+
+db 0x80          ; drive number, 0x80 for hard disks
+db 0             ; reserved
+db 0x29          ; extended boot signature
+dd 0xcafe        ; volume ID (serial number), garbage?
+db "MIRROROS   " ; volume label, garbage
+db "FAT16   "    ; file system type, just for display, garbage
+
+; End of BPB
 
 set_cs:
 jmp 0:start

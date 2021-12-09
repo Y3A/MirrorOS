@@ -4,6 +4,7 @@
 #include "kernel.h"
 #include "disk/disk.h"
 #include "disk/streamer.h"
+#include "fs/file.h"
 #include "fs/path_parser.h"
 #include "idt/idt.h"
 #include "io/io.h"
@@ -74,6 +75,7 @@ void kernel_main(void)
 {
     terminal_init(); // initialise terminal
     kheap_init(); // initialise kernel heap
+    fs_init(); // initialise filesystems
     disk_search_init(); // initialise disks
     idt_init(); // initialise IDT
     
