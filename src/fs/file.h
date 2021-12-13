@@ -19,7 +19,7 @@ enum
     FILE_READONLY,
     FILE_WRITEONLY,
     FILE_READWRITE,
-    FILE_APPEND
+    FILE_APPENDONLY
 };
 
 typedef void*(*FS_OPEN)(PDISK disk, PPATH_PART path, FILE_MODE mode);
@@ -47,7 +47,7 @@ typedef struct
 } FILE_DESCRIPTOR, *PFILE_DESCRIPTOR;
 
 void fs_init(void);
-int fopen(const char * filename, const char * mode);
+int fopen(const char * filename, const char * mode_str);
 void insert_fs(PFILESYSTEM filesystem);
 PFILESYSTEM fs_resolve(PDISK disk);
 

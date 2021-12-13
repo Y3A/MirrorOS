@@ -3,6 +3,7 @@
 #include "config.h"
 #include "kernel.h"
 #include "status.h"
+#include "disk/disk.h"
 #include "fs/file.h"
 #include "memory/memory.h"
 #include "memory/heap/kheap.h"
@@ -16,6 +17,7 @@ static void load_builtin_fs(void);
 void load_fs(void);
 static int new_fd(PFILE_DESCRIPTOR * fd_out);
 static PFILE_DESCRIPTOR get_fd(int fd);
+static FILE_MODE get_mode_from_str(const char * str);
 
 static PFILESYSTEM * get_free_fs(void)
 {
@@ -90,7 +92,103 @@ PFILESYSTEM fs_resolve(PDISK disk)
     return newfs;
 }
 
-int fopen(const char * filename, const char * mode)
+int fopen(const char * filename, const char * mode_str)
 {
-    return -EIO;
+    /*
+     * Example path: 0:/dir/file.txt
+     */
+
+    int res = 0;
+    PPATH_ROOT root_path = parse(filename, NULL);
+    if (!root_path)
+    {
+        res = -EINVAL;
+        goto out;
+    }
+
+    if (!root_path->first)
+    {
+        /*
+         * If path is just root, like 0:/
+         * we need to reject this request
+         */
+        res = -EINVAL;
+        goto out;
+    }
+
+    PDISK disk = disk_get(root_path->drive_no);
+    /*
+     * check if disk exists
+     */
+    if (!disk)
+    {
+        res = -EIO;
+        goto out;
+    }
+
+    /*
+     * check if disk has filesystem bind to it
+     */
+    if (!disk->fs)
+    {
+        res = -EIO;
+        goto out;
+    }
+
+    FILE_MODE mode = get_mode_from_str(mode_str);
+    if (ISERR(mode))
+    {
+        res = -EINVAL;
+        goto out;
+    }
+
+    void * private_data = disk->fs->open(disk, root_path->first, mode);
+
+    if (ISERR(private_data))
+    {
+        res = ERR_I(private_data);
+        goto out;
+    }
+
+    PFILE_DESCRIPTOR fd = 0;
+    res = new_fd(&fd);
+    if (ISERR(res))
+        goto out;
+
+    fd->fs = disk->fs;
+    fd->priv = private_data;
+    fd->disk = disk;
+    res = fd->idx; // return new fd to caller
+
+out:
+    // fopen should not return negative
+    if (res < 0)
+        res = 0;
+    return res;
+}
+
+static FILE_MODE get_mode_from_str(const char * str)
+{
+    FILE_MODE mode = -1;
+    switch (*str)
+    {
+        case 'r':
+            if (*(str+1) == '+')
+                mode = FILE_READWRITE;
+            else
+                mode = FILE_READONLY;
+            break;
+
+        case 'w':
+            mode = FILE_WRITEONLY;
+            break;
+
+        case 'a':
+            mode = FILE_APPENDONLY;
+            break;
+        
+        default:
+            break;
+    }
+    return mode;
 }

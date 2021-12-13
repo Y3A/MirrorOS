@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+#define ERR_I(value) (int)value
+#define ISERR(value) ((int)value < 0)
+
 #define VGA_TEXT_BUF 0xb8000
 #define VGA_WIDTH 80
 #define VGA_HEIGHT 20
