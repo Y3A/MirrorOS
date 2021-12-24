@@ -17,6 +17,11 @@
 #define FAT16_DIRECTORY          0x10
 #define FAT16_ARCHIVE            0x20
 
+// for internal use
+typedef unsigned int FAT16_ITEM_TYPE;
+#define FAT16_TYPE_DIRECTORY     0x0
+#define FAT16_TYPE_FILE          0x1
+
 typedef struct _fat16_header_extended
 {
 	//extended fat12 and fat16 stuff
@@ -46,16 +51,15 @@ typedef struct _fat16_header
 	unsigned short		head_side_count;
 	unsigned int 		hidden_sector_count;
 	unsigned int 		total_sectors_large;
- 
-	FAT16_HEADER_EXT    extended_header;
+
+    FAT16_HEADER_EXT extended_header;
 
 }__attribute__((packed)) FAT16_HEADER, *PFAT16_HEADER;
 
 typedef struct _fat16_item
 {
-
-    char filename[8];
-    char ext[3];
+    uint8_t filename[8];
+    uint8_t ext[3];
     unsigned char attribute;
     unsigned char reserved1;
     unsigned char creation_time_tenth_of_sec;
@@ -73,7 +77,7 @@ typedef struct _fat16_item
 typedef struct _fat16_item_descriptor
 {
     
-    PFAT16_ITEM item;
+    struct _fat16_internal_item * item;
     unsigned int seek_pos;
 
 }__attribute__((packed)) FAT16_ITEM_DESCRIPTOR, *PFAT16_ITEM_DESCRIPTOR;
@@ -81,9 +85,10 @@ typedef struct _fat16_item_descriptor
 typedef struct _fat16_dir
 {
 
-    PFAT16_ITEM dir_as_file;
+    PFAT16_ITEM first_item;
     int total_items;
     int start_sector;
+    int end_sector;
 
 }__attribute__((packed)) FAT16_DIR, *PFAT16_DIR;
 
@@ -92,14 +97,28 @@ typedef struct _fat16_internal
 
     // for internal use
     FAT16_HEADER header;
-    PFAT16_DIR root_dir;
+    FAT16_DIR root_dir;
     PSTREAM cluster_read_stream;
     PSTREAM fat16_read_stream;
 
 }__attribute__((packed)) FAT16_INTERNAL, *PFAT16_INTERNAL;
 
+typedef struct _fat16_internal_item
+{
+
+    // for internal use
+    union
+    {
+        PFAT16_ITEM item;
+        PFAT16_DIR directory;
+    };
+    FAT16_ITEM_TYPE type;
+
+}__attribute__((packed)) FAT16_INTERNAL_ITEM, *PFAT16_INTERNAL_ITEM;
+
 PFILESYSTEM fat16_init(void);
 int fat16_resolve(PDISK disk);
 void * fat16_open(PDISK disk, PPATH_PART path, FILE_MODE mode);
+int fat16_read(PDISK disk, void * desc, uint32_t size, uint32_t nmemb, char * out);
 
 #endif

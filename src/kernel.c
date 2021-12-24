@@ -70,7 +70,7 @@ void terminal_write(const char * str, char colour)
 }
 
 static PPAGE_CHUNK kernel_pagechunk = NULL;
-
+#include "fs/fat16/fat16.h"
 void kernel_main(void)
 {
     terminal_init(); // initialise terminal
@@ -90,12 +90,14 @@ void kernel_main(void)
     
     terminal_print("[+] All Initialised\n");
 
-    /* // tests
+     /* // tests
     
-    PSTREAM stream = new_streamer(0);
-    streamer_seek(stream, 0x1387);
-    char str[40];
-    streamer_read(stream, str, 20);
+    int fd = fopen("0:/hello.txt", "r");
+
+    char buf[20];
+    memset(buf, 0, sizeof(buf));
+    fread(buf, 1, 20, fd);
+    terminal_print(buf);
 
     // end tests */
 

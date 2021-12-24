@@ -26,6 +26,11 @@
         "string": "cpp",
         "system_error": "cpp",
         "typeinfo": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "istream": "c",
+        "ostream": "c",
+        "sstream": "c",
+        "fat16.h": "c",
+        "string.h": "c"
     }
 }

@@ -72,7 +72,7 @@ static int new_fd(PFILE_DESCRIPTOR * fd_out)
 
 static PFILE_DESCRIPTOR get_fd(int fd)
 {
-    if (!(0 > fd && fd < MAX_FD))
+    if (!(0 < fd && fd < MAX_FD))
         return NULL;
     
     int idx = fd - 1;
@@ -191,4 +191,26 @@ static FILE_MODE get_mode_from_str(const char * str)
             break;
     }
     return mode;
+}
+
+int fread(void * ptr, size_t size, uint32_t nmemb, int fd)
+{
+    int res = 0;
+    if (!size || !nmemb || fd < 1)
+    {
+        res = -EINVAL;
+        goto out;
+    }
+
+    PFILE_DESCRIPTOR desc = get_fd(fd);
+    if (!desc)
+    {
+        res = -EINVAL;
+        goto out;
+    }
+
+    res = desc->fs->read(desc->disk, desc->priv, size, nmemb, (char *)ptr);
+
+out:
+    return res;
 }
