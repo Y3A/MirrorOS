@@ -1,32 +1,31 @@
-#include <stdbool.h>
-#include <stddef.h>
+#include "types.h"
 #include "string/string.h"
 
-bool isdigit(char c)
+BOOL isdigit(CHAR c)
 {
     return c >= 48 && c <= 57;
 }
 
-size_t strlen(const char * str)
+ULONG strlen(PCSTR str)
 {
-    size_t ptr = 0;
+    ULONG ptr = 0;
     while (str[ptr++]) ;
     return ptr;
 }
 
-size_t strnlen(const char * str, size_t max)
+ULONG strnlen(PCSTR str, ULONG max)
 {
-    size_t ptr = 0;
+    ULONG ptr = 0;
     for (ptr = 0; ptr < max && str[ptr]; ptr++) ;
     return ptr;
 }
 
-int char2int(char c)
+INT char2int(CHAR c)
 {
     return c - 48;
 }
 
-char * strcpy(char * dest, const char * src)
+PSTR strcpy(PSTR dest, PCSTR src)
 {
     while (*src)
         *(dest++) = *(src++);
@@ -35,7 +34,7 @@ char * strcpy(char * dest, const char * src)
     return dest;
 }
 
-int strcmp(const char * str1, const char * str2)
+INT strcmp(PCSTR str1, PCSTR str2)
 {
     while (*str1 && *str2)
         if (*str1++ != *str2++)
@@ -43,7 +42,7 @@ int strcmp(const char * str1, const char * str2)
     return 0;
 }
 
-char tolower(char s1)
+CHAR tolower(CHAR s1)
 {
     if (s1 >= 65 && s1 <= 90)
     {
@@ -53,14 +52,15 @@ char tolower(char s1)
     return s1;
 }
 
-int istrncmp(const char* s1, const char* s2, int n)
+INT istrncmp(PCSTR s1, PCSTR s2, INT n)
 {
-    unsigned char u1, u2;
+    BYTE u1, u2;
+
     while(n-- > 0)
     {
-        u1 = (unsigned char)*s1++;
-        u2 = (unsigned char)*s2++;
-        if (u1 != u2 && tolower(u1) != tolower(u2))
+        u1 = (BYTE)*s1++;
+        u2 = (BYTE)*s2++;
+        if (u1 != u2 && (tolower(u1) != tolower(u2)))
             return u1 - u2;
         if (u1 == '\0')
             return 0;

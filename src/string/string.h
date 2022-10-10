@@ -1,16 +1,15 @@
 #ifndef STRING_H
 #define STRING_H
 
-#include "stdbool.h"
-#include <stddef.h>
+#include "types.h"
 
-size_t strlen(const char * str);
-int char2int(char c);
-bool isdigit(char c);
-size_t strnlen(const char * str, size_t max);
-char * strcpy(char * dest, const char * src);
-int strcmp (const char * str1, const char * str2);
-char tolower(char s1);
-int istrncmp(const char* s1, const char* s2, int n);
+ULONG strlen(PCSTR str);
+INT char2int(CHAR c);
+BOOL isdigit(CHAR c);
+ULONG strnlen(PCSTR str, ULONG max);
+PSTR strcpy(PSTR dest, PCSTR src);
+INT strcmp (PCSTR str1, PCSTR str2);
+CHAR tolower(CHAR s1);
+INT istrncmp(PCSTR s1, PCSTR s2, INT n);
 
 #endif

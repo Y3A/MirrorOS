@@ -1,9 +1,8 @@
-#include <stdint.h>
-#include <stddef.h>
-
 #include "kernel.h"
+#include "types.h"
 #include "disk/disk.h"
 #include "disk/streamer.h"
+#include "fs/fat16/fat16.h"
 #include "fs/file.h"
 #include "fs/path_parser.h"
 #include "idt/idt.h"
@@ -12,66 +11,71 @@
 #include "memory/paging/paging.h"
 #include "memory/heap/kheap.h"
 
-int cur_x, cur_y;
+DWORD g_cur_x, g_cur_y;
 
-void terminal_init(void)
+VOID terminal_init(VOID)
 {
-    cur_x = 0;
-    cur_y = 0;
-    for (int y = 0; y < VGA_HEIGHT; y++)
-        for (int x = 0; x < VGA_WIDTH; x++)
+    g_cur_x = 0;
+    g_cur_y = 0;
+
+    for (DWORD y = 0; y < VGA_HEIGHT; y++)
+        for (DWORD x = 0; x < VGA_WIDTH; x++)
             terminal_putchar(x, y, ' ', 0);
 }
 
-uint16_t terminal_make_char(char c, char colour)
+WORD terminal_make_char(BYTE c, BYTE colour)
 {
     return (colour << 8 | c);
 }
 
-void terminal_putchar(int x, int y, char c, char colour)
+VOID terminal_putchar(DWORD x, DWORD y, BYTE c, BYTE colour)
 {
-    uint16_t * v_mem = (uint16_t *)VGA_TEXT_BUF;
+    PWORD v_mem = (PWORD)VGA_TEXT_BUF;
     v_mem[(y * VGA_WIDTH) + x] = terminal_make_char(c, colour);
 }
 
-void terminal_writechar(char c, char colour)
+VOID terminal_checkputchar(BYTE c, BYTE colour)
 {
     if (c == '\x0') // end of str
         return;
+
     if (c == '\n') // newline
     {
-        cur_x = 0;
-        cur_y++;
+        g_cur_x = 0;
+        g_cur_y++;
         return;
     }
-    terminal_putchar(cur_x++, cur_y, c, colour);
-    if (cur_x >= VGA_WIDTH)
+
+    terminal_putchar(g_cur_x++, g_cur_y, c, colour);
+    if (g_cur_x >= VGA_WIDTH)
     {
-        cur_x = 0;
-        cur_y++;
+        g_cur_x = 0;
+        g_cur_y++;
     }
+
+    return;
 }
 
-void terminal_print(const char * str)
+VOID terminal_print(PCSTR str)
 {
     terminal_write(str, COL_WHITE);
 }
 
-void terminal_warn(const char * str)
+VOID terminal_warn(PCSTR str)
 {
     terminal_write(str, COL_RED);
 }
 
-void terminal_write(const char * str, char colour)
+VOID terminal_write(PCSTR str, BYTE colour)
 {
-    size_t len = strlen(str);
-    for (int i = 0; i < len; i++)
-        terminal_writechar(str[i], colour);
+    ULONG len = strlen(str);
+    for (DWORD i = 0; i < len; i++)
+        terminal_checkputchar(str[i], colour);
 }
 
 static PPAGE_CHUNK kernel_pagechunk = NULL;
-#include "fs/fat16/fat16.h"
-void kernel_main(void)
+
+VOID kernel_main(VOID)
 {
     terminal_init(); // initialise terminal
     kheap_init(); // initialise kernel heap
@@ -90,7 +94,7 @@ void kernel_main(void)
     
     terminal_print("[+] All Initialised\n");
 
-     /* // tests
+    /*  // tests
     
     int fd = fopen("0:/hello.txt", "r");
 

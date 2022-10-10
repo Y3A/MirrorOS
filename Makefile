@@ -5,9 +5,9 @@ FLAGS = -g -ffreestanding -falign-jumps -falign-functions -falign-labels -falign
 
 all: $(BINS)
 	dd if=./bin/boot.bin >> ./bin/os.bin
-	dd if=./bin/kernel.bin >> ./bin/os.bin
-	dd if=/dev/zero bs=1048576 count=16 >> ./bin/os.bin
-	sudo mount -t vfat ./bin/os.bin /mnt/mirroros/
+	dd if=./bin/kernel.bin >> ./bin/os.bin # boot sector goes first, then the kernel which is loaded by the former.
+	dd if=/dev/zero bs=1048576 count=16 >> ./bin/os.bin # pad the size up for enough "ram"
+	sudo mount -t vfat ./bin/os.bin /mnt/mirroros/ # mount VFS so we can copy things from host to OS
 	# copy a file over after fs is mounted
 	sudo cp ./hello.txt /mnt/mirroros/hello.txt
 	# done copy
@@ -29,8 +29,8 @@ all: $(BINS)
 	i686-elf-gcc $(INCLUDES) $(FLAGS) ./src/memory/memory.c -c -o ./build/memory/memory.o
 
 ./bin/kernel.bin: $(LINKS)
-	i686-elf-ld -relocatable $(LINKS) -o ./build/kernelfull.o
-	i686-elf-gcc $(FLAGS) ./build/kernelfull.o -T ./src/linker.ld -ffreestanding -O0 -nostdlib -o ./bin/kernel.bin
+	i686-elf-ld -relocatable $(LINKS) -o ./build/kernelfull.o # mash object files together, produce output as another object file.
+	i686-elf-gcc $(FLAGS) ./build/kernelfull.o -T ./src/linker.ld -ffreestanding -O0 -nostdlib -o ./bin/kernel.bin # compile with our predefined linker settings
 
 ./build/io/io.asm.o: ./src/io/io.asm
 	nasm -f elf -g ./src/io/io.asm -o ./build/io/io.asm.o

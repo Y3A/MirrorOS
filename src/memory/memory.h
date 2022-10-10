@@ -1,7 +1,7 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include <stddef.h>
+#include "types.h"
 
 #define PAGE_ALLOC_START 0x2100000
 #define PAGE_ALLOC_MAX 0x2500000
@@ -9,11 +9,11 @@
 #define PAGE_ALLOC_TABLE 0x00007f00
 #define PAGE_SZ 4096
 
-void * memset(void * ptr, int c, size_t size);
-int memcmp(void * s1, void * s2, int count);
-void * memcpy(void * dest, void * src, int len);
+PVOID memset(PVOID ptr, INT c, ULONG size);
+INT memcmp(PVOID s1, PVOID s2, INT count);
+PVOID memcpy(PVOID dest, PVOID src, INT len);
 
-void * page_alloc(void);
-void page_free(void * page);
+PVOID page_alloc(VOID);
+VOID page_free(PVOID page);
 
 #endif

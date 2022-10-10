@@ -136,7 +136,7 @@ int fopen(const char * filename, const char * mode_str)
     }
 
     FILE_MODE mode = get_mode_from_str(mode_str);
-    if (ISERR(mode))
+    if (!MIRROR_SUCCESS(mode))
     {
         res = -EINVAL;
         goto out;
@@ -144,15 +144,15 @@ int fopen(const char * filename, const char * mode_str)
 
     void * private_data = disk->fs->open(disk, root_path->first, mode);
 
-    if (ISERR(private_data))
+    if (!MIRROR_SUCCESS(private_data))
     {
-        res = ERR_I(private_data);
+        res = MIRROR_STATUS(private_data);
         goto out;
     }
 
     PFILE_DESCRIPTOR fd = 0;
     res = new_fd(&fd);
-    if (ISERR(res))
+    if (!MIRROR_SUCCESS(res))
         goto out;
 
     fd->fs = disk->fs;

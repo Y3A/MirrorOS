@@ -2,6 +2,7 @@
 #define KHEAP_H
 
 #include "heap.h"
+#include "types.h"
 #include "memory/memory.h"
 
 #define KHEAP_START HEAP_START
@@ -9,8 +10,8 @@
 
 void kheap_init(void);
 
-void * kmalloc(size_t chunk_size);
+void * kmalloc(ULONG chunk_size);
 void kfree(void * addr);
-void * kzalloc(size_t chunk_size);
+void * kzalloc(ULONG chunk_size);
 
 #endif

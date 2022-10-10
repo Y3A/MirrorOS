@@ -1,7 +1,7 @@
 #ifndef HEAP_H
 #define HEAP_H
 
-#include <stddef.h>
+#include "types.h"
 
 #define MIN_CHUNK_SZ 0x20
 #define CHUNK_ALIGN_SZ 0x10
@@ -16,20 +16,20 @@
 #define chunksize_nomask(s) ((s) &~ PREV_INUSE)
 #define prev_inuse(s) ((s) & PREV_INUSE)
 
-int heap_init(void * start, size_t heap_size, void * free_bin_head);
-void * heap_allocate(void * free_bin_head, size_t chunk_size);
-size_t align_heap_chunks(size_t chunk_size);
+INT heap_init(PVOID start, ULONG heap_size, PVOID free_bin_head);
+PVOID heap_allocate(PVOID free_bin_head, ULONG chunk_size);
+ULONG align_heap_chunks(ULONG chunk_size);
 
-void * heap_find_available(void * free_bin_head, size_t chunk_size);
-void heap_free(void * free_bin_head, void * chunk_addr);
-size_t chunksize_at_mem(void * addr);
-void unlink(void * cur);
+PVOID heap_find_available(PVOID free_bin_head, ULONG chunk_size);
+VOID heap_free(PVOID free_bin_head, PVOID chunk_addr);
+ULONG chunksize_at_mem(PVOID addr);
+VOID unlink(PVOID cur);
 
-void chunk_set_size(void * addr, size_t chunk_size);
-void chunk_set_fd(void * addr, void * fd);
-void chunk_set_bk(void * addr, void * bk);
+VOID chunk_set_size(PVOID addr, ULONG chunk_size);
+VOID chunk_set_fd(PVOID addr, PVOID fd);
+VOID chunk_set_bk(PVOID addr, PVOID bk);
 
-void * chunk_fd(void * cur);
-void * chunk_bk(void * cur);
+PVOID chunk_fd(PVOID cur);
+PVOID chunk_bk(PVOID cur);
 
 #endif

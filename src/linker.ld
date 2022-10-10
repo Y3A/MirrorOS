@@ -25,6 +25,7 @@ SECTIONS
         *(COMMON) /* Place all uninitialised data here */
         *(.bss)
     }
+    
     .asm ALIGN(4096) :
     {
         *(.asm)

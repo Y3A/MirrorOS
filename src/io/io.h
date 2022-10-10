@@ -1,10 +1,10 @@
 #ifndef IO_H
 #define IO_H
 
-unsigned char insb(unsigned short port);
-unsigned short insw(unsigned short port);
+BYTE insb(WORD port);
+WORD insw(WORD port);
 
-void outsb(unsigned short port, unsigned char val);
-void outsw(unsigned short port, unsigned short val);
+VOID outsb(WORD port, BYTE val);
+VOID outsw(WORD port, WORD val);
 
 #endif

@@ -1,7 +1,7 @@
 BITS 32
 global _start ; export label
 
-extern kernel_main
+extern kernel_main ; defined in c code
 
 GDT_CS equ 1000b ; index 1 in GDT, 0 for GDT and 00 for privileged
 GDT_DATA equ 10000b ; index 2 in GDT, 0 for GDT and 00 for privileged
@@ -15,13 +15,15 @@ mov gs, ax
 mov ss, ax
 
 ; enable A20 line
+; https://wiki.osdev.org/A20_Line#Fast_A20_Gate
 in al, 0x92
 or al, 2
 out 0x92, al
 ;
 
 ; reinitialize the PIC controllers, giving them specified vector offsets
-;   rather than 8h and 70h, as configured by default
+; rather than 8h and 70h, as configured by default
+; https://wiki.osdev.org/8259_PIC#Common_Definitions
 
 PIC_MASTER EQU 0x20		; /* IO base address for master PIC */
 PIC_SLAVE EQU 0xA0		; /* IO base address for slave PIC */
@@ -44,11 +46,11 @@ ICW4_SFNM EQU 0x10	; Special fully nested (not)
 
 ; remap master PIC
 
-mov al, ICW1_INIT
+mov al, ICW1_INIT ; starts the initialization sequence (in cascade mode)
 or al, ICW1_ICW4 ; require ICW4
 out PICM_COMMAND, al
 
-mov al, 0x20 ; Map ISRs starting from interrupt 0x20
+mov al, 0x20 ; remap hardware interrupts to start from 0x20, because 0x0-0x20 is reserved by Intel x86 exception addresses
 out PICM_DATA, al
 
 mov al, ICW4_8086 ; x86 mode
@@ -56,6 +58,7 @@ out PICM_DATA, al
 
 ; Done remapping master PIC
 
+; Give the stack a ton of space
 mov ebp, 0x200000
 mov esp, ebp
 

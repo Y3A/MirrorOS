@@ -1,28 +1,32 @@
-#include "idt/idt.h"
 #include "config.h"
+#include "kernel.h"
+#include "types.h"
+#include "idt/idt.h"
 #include "memory/memory.h"
 
-struct IDT_ENTRY idt[TOTAL_INTERRUPTS];
-struct IDT_DESC idt_desc;
+IDT_ENTRY idt[TOTAL_INTERRUPTS];
+IDT_DESC idt_desc;
 
-#include "kernel.h"
-
-void idt_init(void)
+VOID idt_init(VOID)
+/*
+    * https://wiki.osdev.org/Interrupt_Descriptor_Table#IDTR
+    * Initializing IDT Entries and IDT Descriptor, then loading it
+*/
 {
     memset(idt, 0, sizeof(idt));
     idt_desc.limit = sizeof(idt)-1;
-    idt_desc.base = (uint32_t)idt;
+    idt_desc.base = (DWORD)idt;
 
-    for (int i = 0; i < TOTAL_INTERRUPTS; i++)
+    for (INT i = 0; i < TOTAL_INTERRUPTS; i++)
         idt_set(i, idt_void);
 
-    idt_set(0, idt_0);
-    idt_set(0x21, idt_33);
+    idt_set(IDT_DIV_BY_ZERO, idt_div_by_zero);
+    idt_set(IDT_KEY_PRESS, idt_key_press);
 
     idt_load(&idt_desc);
 }
 
-void idt_load(struct IDT_DESC * idt_desc_addr)
+VOID idt_load(PIDT_DESC idt_desc_addr)
 {
     __asm__
     (
@@ -36,13 +40,17 @@ void idt_load(struct IDT_DESC * idt_desc_addr)
     );
 }
 
-void idt_set(int i, void * addr)
+VOID idt_set(INT interrupt_number, PVOID isr_addr)
+/*
+    * https://wiki.osdev.org/Interrupt_Descriptor_Table#Gate_Descriptor_2
+    * Mapping ISRs to an interrupt number to handle it
+*/
 {
-    // i for interrupt number, addr for address of interrupt service routines
-    struct IDT_ENTRY * entry = &idt[i];
-    entry->offset_low = (uint32_t)addr & 0x0000ffff;
+    // isr_addr for address of interrupt service routines
+    PIDT_ENTRY entry = &idt[interrupt_number];
+    entry->offset_low = (DWORD)isr_addr & 0x0000ffff;
     entry->selector = GDT_CS;
     entry->zero = 0;
     entry->type_attr = 0b11101110;
-    entry->offset_high = (uint32_t)addr >> 16;
+    entry->offset_high = (DWORD)isr_addr >> 16;
 }

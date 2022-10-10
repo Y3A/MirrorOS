@@ -1,51 +1,52 @@
 #include "memory.h"
+#include "types.h"
 
-void * memset(void * ptr, int c, size_t size)
+PVOID memset(PVOID ptr, INT c, ULONG size)
 {
-    char * base = (char *)ptr;
-    for (int i = 0; i < size; i++)
+    PSTR base = (PSTR)ptr;
+    for (INT i = 0; i < size; i++)
         base[i] = (char)c;
     
-    return (void *)base;
+    return (PVOID)base;
 }
 
-void * page_alloc(void)
+PVOID page_alloc(VOID)
 {
-    char * start = (char *)PAGE_ALLOC_TABLE;
-    for ( int i = 0; i < MAX_PAGE_IDX; i++ )
+    PSTR start = (PSTR)PAGE_ALLOC_TABLE;
+    for (INT i = 0; i < MAX_PAGE_IDX; i++)
     {
-        if ( *(start + i) == 0)
+        if (*(start + i) == 0)
         {
             *(start + i) = 1;
-            return (void *)(PAGE_ALLOC_START + (PAGE_SZ * i));
+            return (PVOID)(PAGE_ALLOC_START + (PAGE_SZ * i));
         }
     }
     return NULL;
 }
 
-void page_free(void * page)
+VOID page_free(PVOID page)
 {
-    char * start = (char *)PAGE_ALLOC_TABLE;
-    for ( int i = 0; i < MAX_PAGE_IDX; i++ )
-        if ( (start + (i * PAGE_SZ)) == (char *)page )
+    PSTR start = (PSTR)PAGE_ALLOC_TABLE;
+    for (INT i = 0; i < MAX_PAGE_IDX; i++)
+        if ((start + (i * PAGE_SZ)) == (PSTR)page)
             *(start + i) = 0;
 }
 
-int memcmp(void * s1, void * s2, int count)
+INT memcmp(PVOID s1, PVOID s2, INT count)
 {
-    char * c1 = s1;
-    char * c2 = s2;
+    PSTR c1 = s1;
+    PSTR c2 = s2;
     while (count-- > 0)
         if (*c1++ != *c2++)
             return c1[-1] < c2[-1] ? -1 : 1;
     return 0;
 }
 
-void * memcpy(void * dest, void * src, int len)
+PVOID memcpy(PVOID dest, PVOID src, INT len)
 {
-    char * d = dest;
-    char * s = src;
-    for (int i = 0; i < len; i++)
+    PSTR d = dest;
+    PSTR s = src;
+    for (INT i = 0; i < len; i++)
         *d++ = *s++;
         
     return d;

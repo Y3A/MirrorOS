@@ -1,7 +1,11 @@
 section .asm
 
-global idt_0
-global idt_33
+PIC_MASTER EQU 0x20	; IO base address for master PIC
+PICM_COMMAND EQU PIC_MASTER
+PIC_EOI EQU 0x20 ; End-of-interrupt command code
+
+global idt_div_by_zero
+global idt_key_press
 global idt_void
 extern terminal_warn
 extern terminal_print
@@ -10,14 +14,14 @@ idt_void:
 cli
 pushad
 
-mov eax, 0x20
-out 0x20, eax
+mov eax, PIC_EOI
+out PICM_COMMAND, eax
 
 popad
 sti
 iret
 
-idt_33:
+idt_key_press:
 cli
 pushad
 
@@ -25,14 +29,14 @@ push keyb_alert
 call terminal_print
 add esp, 4
 
-mov eax, 0x20
-out 0x20, eax
+mov eax, PIC_EOI
+out PICM_COMMAND, eax
 
 popad
 sti
 iret
 
-idt_0:
+idt_div_by_zero:
 cli
 pushad
 
@@ -40,8 +44,8 @@ push warning
 call terminal_warn
 add esp, 4
 
-mov eax, 0x20
-out 0x20, eax
+mov eax, PIC_EOI
+out PICM_COMMAND, eax
 
 popad
 sti

@@ -427,7 +427,7 @@ int fat16_read(PDISK disk, void * desc, uint32_t size, uint32_t nmemb, char * ou
     for (uint32_t i = 0; i < nmemb; i++)
     {
         res = read_internal(disk, item->first_cluster_number, offset, size, out);
-        if (ISERR(res))
+        if (!MIRROR_SUCCESS(res))
             goto endfunc;
 
         out += size;
