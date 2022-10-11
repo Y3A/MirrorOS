@@ -7,7 +7,7 @@
     * Merge with forward and backward free chunks if possible
     * Heap block structure:
     *       Chunk+0x00: prev_size(if prev chunk is free) or prev chunk data(if prev chunk inuse)
-    *       Chunk+0x08: cur chunk size, last bit for inuse if set
+    *       Chunk+0x08: cur chunk size, last bit for previous chunk inuse if set
     *       Chunk+0x10: cur chunk user data start, forward pointer of free bins list(if free)
     *       CHunk+0x18: cur chunk data, backward pointer of free bins list(if free)
 */
@@ -35,7 +35,7 @@ MIRRORSTATUS heap_init(PVOID start, ULONG heap_size, PVOID free_bin_head)
     // set "top chunk", the big initial chunk to split chunks from
     top_chunk = (PVOID)(*(PULONG)free_bin_head);
 
-    // set top chunk size, top chunk is always "in use", but linked into free bin
+    // set top chunk size, previous chunk is always in use
     chunk_set_size(top_chunk, (heap_size | PREV_INUSE));
     // first chunk, fd bk points back to itself
     chunk_set_fd(top_chunk, top_chunk);
@@ -290,7 +290,7 @@ VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
     chunk_set_size(next_chunk_addr, chunksize_nomask(\
         chunksize_at_mem(next_chunk_addr)));
 
-    // set PREV_SIZE field for next
+    // set prev_size field for next
     *(PULONG)next_chunk_addr = chunk_sz_nomask;
 
     // check forward consolidation
@@ -305,6 +305,9 @@ VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
             new_next_chunk = next_chunk_addr - *(PULONG)next_chunk_addr; // prev_size
             new_next_chunk_sz = chunksize_nomask(chunksize_at_mem(next_chunk_addr)) +\
                  *(PULONG)next_chunk_addr;
+
+            // update prev_size
+            *(PULONG)next_next_chunk_addr = new_next_chunk_sz;
 
             if (merged_back)
             // needs unlinking
