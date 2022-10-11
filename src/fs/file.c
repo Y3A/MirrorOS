@@ -67,7 +67,7 @@ static int new_fd(PFILE_DESCRIPTOR * fd_out)
             *fd_out = new;
             return 0;
         }
-    return -ENOMEM;
+    return STATUS_ENOMEM;
 }
 
 static PFILE_DESCRIPTOR get_fd(int fd)
@@ -102,7 +102,7 @@ int fopen(const char * filename, const char * mode_str)
     PPATH_ROOT root_path = parse(filename, NULL);
     if (!root_path)
     {
-        res = -EINVAL;
+        res = STATUS_EINVAL;
         goto out;
     }
 
@@ -112,7 +112,7 @@ int fopen(const char * filename, const char * mode_str)
          * If path is just root, like 0:/
          * we need to reject this request
          */
-        res = -EINVAL;
+        res = STATUS_EINVAL;
         goto out;
     }
 
@@ -122,7 +122,7 @@ int fopen(const char * filename, const char * mode_str)
      */
     if (!disk)
     {
-        res = -EIO;
+        res = STATUS_EIO;
         goto out;
     }
 
@@ -131,14 +131,14 @@ int fopen(const char * filename, const char * mode_str)
      */
     if (!disk->fs)
     {
-        res = -EIO;
+        res = STATUS_EIO;
         goto out;
     }
 
     FILE_MODE mode = get_mode_from_str(mode_str);
     if (!MIRROR_SUCCESS(mode))
     {
-        res = -EINVAL;
+        res = STATUS_EINVAL;
         goto out;
     }
 
@@ -198,14 +198,14 @@ int fread(void * ptr, size_t size, uint32_t nmemb, int fd)
     int res = 0;
     if (!size || !nmemb || fd < 1)
     {
-        res = -EINVAL;
+        res = STATUS_EINVAL;
         goto out;
     }
 
     PFILE_DESCRIPTOR desc = get_fd(fd);
     if (!desc)
     {
-        res = -EINVAL;
+        res = STATUS_EINVAL;
         goto out;
     }
 

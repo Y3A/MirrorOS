@@ -14,7 +14,7 @@ xor eax, eax
 mov edx, [ebp+8]
 in al, dx
 
-pop ebp
+leave
 ret
 
 insw:
@@ -25,7 +25,7 @@ xor eax, eax
 mov edx, [ebp+8]
 in ax, dx
 
-pop ebp
+leave
 ret
 
 outsb:
@@ -36,7 +36,7 @@ mov edx, [ebp+8]
 mov eax, [ebp+12]
 out dx, al
 
-pop ebp
+leave
 ret
 
 outsw:
@@ -47,5 +47,5 @@ mov edx, [ebp+8]
 mov eax, [ebp+12]
 out dx, ax
 
-pop ebp
+leave
 ret

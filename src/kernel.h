@@ -19,5 +19,6 @@ VOID terminal_print(PCSTR str);
 VOID terminal_warn(PCSTR str);
 VOID terminal_write(PCSTR str, BYTE colour);
 VOID terminal_init(VOID);
+VOID kernel_panic(PCSTR msg);
 
 #endif

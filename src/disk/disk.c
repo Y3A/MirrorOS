@@ -44,7 +44,7 @@ PDISK disk_get(int idx)
 int disk_read_block(PDISK disk, unsigned int lba, int sectors, void * buf)
 {
     if (disk != &curdisk)
-        return -ENXIO;
+        return STATUS_ENXIO;
 
     disk_read_sector(lba, sectors, buf);
     return 0;

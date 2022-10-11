@@ -3,8 +3,8 @@
 
 #include "types.h"
 
-#define MIN_CHUNK_SZ 0x20
-#define CHUNK_ALIGN_SZ 0x10
+#define HEAP_MIN_CHUNK_SZ 0x20
+#define HEAP_CHUNK_ALIGN_SZ 0x10
 #define HEAP_ALIGN_SZ 0x1000
 #define HEAP_PAGE_SZ 0x1000
 
@@ -16,9 +16,9 @@
 #define chunksize_nomask(s) ((s) &~ PREV_INUSE)
 #define prev_inuse(s) ((s) & PREV_INUSE)
 
-INT heap_init(PVOID start, ULONG heap_size, PVOID free_bin_head);
+MIRRORSTATUS heap_init(PVOID start, ULONG heap_size, PVOID free_bin_head);
 PVOID heap_allocate(PVOID free_bin_head, ULONG chunk_size);
-ULONG align_heap_chunks(ULONG chunk_size);
+ULONG heap_align_heap_chunk(ULONG chunk_size);
 
 PVOID heap_find_available(PVOID free_bin_head, ULONG chunk_size);
 VOID heap_free(PVOID free_bin_head, PVOID chunk_addr);

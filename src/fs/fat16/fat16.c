@@ -50,7 +50,7 @@ int fat16_resolve(PDISK disk)
     if (!stream)
     {
         kfree(internal);
-        return -ENOMEM;
+        return STATUS_ENOMEM;
     }
 
     if (streamer_read(stream, &(internal->header), sizeof(internal->header)) < 0)
@@ -58,7 +58,7 @@ int fat16_resolve(PDISK disk)
         if (stream)
             streamer_close(stream);
         kfree(internal);
-        return -EIO;
+        return STATUS_EIO;
     }
     
     if (internal->header.extended_header.boot_signature != 0x29)
@@ -66,7 +66,7 @@ int fat16_resolve(PDISK disk)
         if (stream)
             streamer_close(stream);
         kfree(internal);
-        return -ENODEV;
+        return STATUS_ENODEV;
     }
 
     // it is fat16!
@@ -76,7 +76,7 @@ int fat16_resolve(PDISK disk)
         if (stream)
             streamer_close(stream);
         kfree(internal);
-        return -EIO;
+        return STATUS_EIO;
     }
 
     if (stream)
@@ -92,13 +92,13 @@ void * fat16_open(PDISK disk, PPATH_PART path, FILE_MODE mode)
     PFAT16_ITEM_DESCRIPTOR desc = NULL;
     desc = (PFAT16_ITEM_DESCRIPTOR)kzalloc(sizeof(FAT16_ITEM_DESCRIPTOR));
     if (!desc)
-        return (void *)-ENOMEM;
+        return (void *)STATUS_ENOMEM;
 
     desc->item = get_dir_entry(disk, path);
     if (!desc->item)
     {
         kfree(desc);
-        return (void *)-EIO;
+        return (void *)STATUS_EIO;
     }
 
     desc->seek_pos = 0;
@@ -127,14 +127,14 @@ static int fat16_get_root_dir(PDISK disk, PFAT16_INTERNAL internal, PFAT16_DIR r
     PFAT16_ITEM dir_file = (PFAT16_ITEM)kzalloc(root_dir_sz);
 
     if (!dir_file)
-        return -ENOMEM;
+        return STATUS_ENOMEM;
     
     PSTREAM new_stream = internal->cluster_read_stream;
     streamer_seek(new_stream, (disk->sector_size * root_dir_sector_start));
     if (streamer_read(new_stream, dir_file, root_dir_sz) < 0)
     {
         kfree(dir_file);
-        return -EIO;
+        return STATUS_EIO;
     }
 
     root_dir->first_item = dir_file;
@@ -158,7 +158,7 @@ static int fat16_get_total_items_for_dir(PFAT16_INTERNAL internal, PDISK disk, i
     do
     {
         if (streamer_read(stream, &cur, sizeof(cur)) < 0)
-            return -EIO;
+            return -STATUS_EIO;
         count++;
 
     } while (cur.filename[0] != 0x00);
@@ -258,14 +258,14 @@ static PFAT16_DIR load_dir(PDISK disk, PFAT16_ITEM item)
 
     if (!(item->attribute & FAT16_DIRECTORY))
     {
-        res = -EINVAL;
+        res = STATUS_EINVAL;
         goto out;
     }
 
     dir = (PFAT16_DIR)kzalloc(sizeof(FAT16_DIR));
     if (!dir)
     {
-        res = -ENOMEM;
+        res = STATUS_ENOMEM;
         goto out;
     }
 
@@ -277,7 +277,7 @@ static PFAT16_DIR load_dir(PDISK disk, PFAT16_ITEM item)
     dir->first_item = (PFAT16_ITEM)kzalloc(dir_sz);
     if (!dir->first_item)
     {
-        res = -ENOMEM;
+        res = STATUS_ENOMEM;
         goto out;
     }
 
@@ -365,7 +365,7 @@ static int get_cluster_at_offset(PDISK disk, int start_cluster, int offset)
         {
             case FAT16_BAD_SECTOR:
             case FAT16_UNUSED:
-                res = -EIO;
+                res = STATUS_EIO;
                 goto out;
             
             default:

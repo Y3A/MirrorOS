@@ -34,7 +34,7 @@ static int path_valid_format(const char * path)
 static int get_drive_by_path(const char ** path)
 {
     if (!path_valid_format(*path))
-        return -EINVAL;
+        return STATUS_EINVAL;
 
     int drive_no = char2int(**path);
 

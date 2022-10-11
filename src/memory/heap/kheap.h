@@ -8,10 +8,10 @@
 #define KHEAP_START HEAP_START
 #define KHEAP_SZ 1024*1024
 
-void kheap_init(void);
+MIRRORSTATUS kheap_init(VOID);
 
-void * kmalloc(ULONG chunk_size);
-void kfree(void * addr);
-void * kzalloc(ULONG chunk_size);
+PVOID kmalloc(ULONG chunk_size);
+VOID kfree(PVOID addr);
+PVOID kzalloc(ULONG chunk_size);
 
 #endif

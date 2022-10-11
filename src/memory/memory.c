@@ -5,14 +5,14 @@ PVOID memset(PVOID ptr, INT c, ULONG size)
 {
     PSTR base = (PSTR)ptr;
     for (INT i = 0; i < size; i++)
-        base[i] = (char)c;
+        base[i] = (CHAR)c;
     
     return (PVOID)base;
 }
 
 PVOID page_alloc(VOID)
 {
-    PSTR start = (PSTR)PAGE_ALLOC_TABLE;
+    PBYTE start = (PBYTE)PAGE_ALLOC_TABLE;
     for (INT i = 0; i < MAX_PAGE_IDX; i++)
     {
         if (*(start + i) == 0)
@@ -24,11 +24,22 @@ PVOID page_alloc(VOID)
     return NULL;
 }
 
+PVOID page_alloc_zero(VOID)
+{
+    PVOID new_page = page_alloc();
+    if (!new_page)
+        return NULL;
+
+    memset(new_page, 0, PAGE_SZ);
+    
+    return new_page;
+}
+
 VOID page_free(PVOID page)
 {
-    PSTR start = (PSTR)PAGE_ALLOC_TABLE;
+    PBYTE start = (PBYTE)PAGE_ALLOC_TABLE;
     for (INT i = 0; i < MAX_PAGE_IDX; i++)
-        if ((start + (i * PAGE_SZ)) == (PSTR)page)
+        if (*(start + i) == 1 && (PULONG)(PAGE_ALLOC_START + (i * PAGE_SZ)) == (PULONG)page)
             *(start + i) = 0;
 }
 

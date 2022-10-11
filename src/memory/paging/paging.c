@@ -1,80 +1,117 @@
-#include <stdbool.h>
 #include "paging.h"
 #include "status.h"
+#include "types.h"
 #include "memory/memory.h"
 #include "memory/heap/kheap.h"
 
-static uint32_t * cur_dir = NULL;
-void paging_load_dir(uint32_t * pagedir);
-
-PPAGE_CHUNK new_page_chunk(uint8_t flags)
+MIRRORSTATUS paging_new_pagechunk(PPAGE_CHUNK *out_pagechunk, WORD flags)
+// a page chunk points to a filled page dir
 {
-    // one page chunk is one filled page directory
-    uint32_t * new_pagedir = page_alloc();
-    // 1024 pagedir entries
-    for (int i = 0; i < PAGEDIR_TOTAL_ENTRIES; i++)
-    {
-        size_t offset = i * PAGETABLE_TOTAL_ENTRIES * PAGE_SZ;
+    MIRRORSTATUS    status = STATUS_SUCCESS;
+    PULONG          new_pagedir = NULL;
+    ULONG           pagetable_offset = 0;
+    PULONG          new_pagetable = NULL;
+    PPAGE_CHUNK     new_pagechunk = NULL;
 
-        // 1024 pagetable entires per pagedir entry
-        uint32_t * pagetable_entry = page_alloc();
-        for (int j = 0; j < PAGETABLE_TOTAL_ENTRIES; j++)
-            pagetable_entry[j] = ( (offset + (j * PAGE_SZ)) | flags );
-        
-        // set pagedir entries to writeable by default
-        new_pagedir[i] = (uint32_t)pagetable_entry | flags | PAGING_RDWR;
+    new_pagedir = page_alloc_zero();
+    if (!new_pagedir) {
+        status = STATUS_ENOMEM;
+        goto out;
     }
 
-    // get a new page chunk and return a pointer to it
-    PPAGE_CHUNK new_chunk = (PPAGE_CHUNK)kzalloc(sizeof(PAGE_CHUNK));
-    new_chunk->pagedir = new_pagedir;
+    // 1024 pagetables per pagedir
+    for (ULONG pagetable_idx = 0; pagetable_idx < PAGING_PAGETABLES_PER_PAGEDIR; pagetable_idx++)
+    {
+        new_pagetable = page_alloc_zero();
+        if (!new_pagetable) {
+            status = STATUS_ENOMEM;
+            goto out;
+        }
 
-    return new_chunk;
+        pagetable_offset = pagetable_idx * PAGING_PAGES_PER_PAGETABLE * PAGE_SZ;
+
+        // 1024 pages per pagetable
+        for (ULONG page_idx = 0; page_idx < PAGING_PAGES_PER_PAGETABLE; page_idx++)
+            // default PTEs point to themselves, until we set them to point to virtual memory
+            new_pagetable[page_idx] = ((pagetable_offset + (page_idx * PAGE_SZ)) | flags);
+        
+        // set pagetables to writeable by default
+        new_pagedir[pagetable_idx] = (DWORD)new_pagetable | flags | PAGING_RDWR;
+    }
+
+    // return pointer to the new pagechunk
+    new_pagechunk = (PPAGE_CHUNK)kzalloc(sizeof(PAGE_CHUNK));
+    if (!new_pagechunk) {
+        status = STATUS_ENOMEM;
+        goto out;
+    }
+
+    new_pagechunk->pagedir = new_pagedir;
+    *out_pagechunk = new_pagechunk;
+
+out:
+    if (!MIRROR_SUCCESS(status)) {
+        if (new_pagedir) {
+            for (ULONG pagetable_idx = 0; pagetable_idx < PAGING_PAGETABLES_PER_PAGEDIR; pagetable_idx++)
+                if (new_pagedir[pagetable_idx])
+                    page_free((PVOID)(new_pagedir[pagetable_idx] & 0xfffff000));
+
+        page_free((PVOID)new_pagedir);
+        }
+    }
+    return status;
 }
 
-void paging_switch_dir(uint32_t * pagedir)
-// function to switch page directories
+VOID paging_switch_pagedir(PULONG pagedir)
+// switch page directories
 {
-    paging_load_dir(pagedir);
-    cur_dir = pagedir;
+    paging_load_pagedir(pagedir);
 }
 
-int paging_get_idx(void * vaddr, uint32_t * pagedir_idx, uint32_t * pagetable_idx)
+MIRRORSTATUS paging_get_pagedir_pagetable_idx(PVOID vaddr, PULONG pagedir_idx, PULONG pagetable_idx)
 {
-    if (!paging_is_aligned(vaddr))
-        return -EINVAL;
+    MIRRORSTATUS status = STATUS_SUCCESS;
+
+    if (!paging_is_aligned(vaddr)) {
+        status = STATUS_EINVAL;
+        goto out;
+    }
     
-    *pagedir_idx = ( (uint32_t)vaddr / \
-                (PAGETABLE_TOTAL_ENTRIES * PAGE_SZ ) );
+    *pagedir_idx = ((ULONG)vaddr / \
+                (PAGING_PAGES_PER_PAGETABLE * PAGE_SZ ));
 
-    *pagetable_idx = ( ( (uint32_t)vaddr % \
-                (PAGETABLE_TOTAL_ENTRIES * PAGE_SZ) ) \
-                / PAGE_SZ );
-    return 0;
+    *pagetable_idx = (((ULONG)vaddr % \
+                (PAGING_PAGES_PER_PAGETABLE * PAGE_SZ)) \
+                / PAGE_SZ);
+
+out:
+    return status;
 }
 
-bool paging_is_aligned(void * addr)
+BOOL paging_is_aligned(PVOID addr)
 {
-    return ((uint32_t)addr % PAGE_SZ) == 0;
+    return ((ULONG)addr % PAGE_SZ) == 0;
 }
 
-int pagetable_set_entry(uint32_t * pagedir, void * vaddr, uint32_t physaddr_flags)
+MIRRORSTATUS paging_set_pagetable_entry(PULONG pagedir, PVOID vaddr, ULONG paddr_flags)
 {
-    if (!paging_is_aligned(vaddr))
-        return -EINVAL;
+    MIRRORSTATUS    status = STATUS_SUCCESS;
+    ULONG           pagedir_idx = 0, pagetable_idx = 0;
 
-    uint32_t pagedir_idx = 0;
-    uint32_t pagetable_idx = 0;
+    if (!paging_is_aligned(vaddr)) {
+        status = STATUS_EINVAL;
+        goto out;
+    }
 
-    int res = paging_get_idx(vaddr, &pagedir_idx, &pagetable_idx);
+    status = paging_get_pagedir_pagetable_idx(vaddr, &pagedir_idx, &pagetable_idx);
+    if (!MIRROR_SUCCESS(status))
+        goto out;
 
-    if (res < 0)
-        return res;
+    ULONG pagedir_entry = pagedir[pagedir_idx];
+    ULONG pagetable = (ULONG)(pagedir_entry & 0xfffff000); // mask off flag bits
 
-    uint32_t pagedir_entry = pagedir[pagedir_idx];
-    uint32_t * pagetable = (uint32_t *)(pagedir_entry & 0xfffff000);
+    ((PULONG)pagetable)[pagetable_idx] = paddr_flags;
 
-    pagetable[pagetable_idx] = physaddr_flags;
-
-    return 0;
+out:
+    return status;
 }

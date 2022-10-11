@@ -2,84 +2,107 @@
 #include "types.h"
 #include "memory/heap/heap.h"
 
-INT heap_init(PVOID start, ULONG heap_size, PVOID free_bin_head)
+/*
+    * Doubly-Linked free bins list to store freed heap chunks
+    * Merge with forward and backward free chunks if possible
+    * Heap block structure:
+    *       Chunk+0x00: prev_size(if prev chunk is free) or prev chunk data(if prev chunk inuse)
+    *       Chunk+0x08: cur chunk size, last bit for inuse if set
+    *       Chunk+0x10: cur chunk user data start, forward pointer of free bins list(if free)
+    *       CHunk+0x18: cur chunk data, backward pointer of free bins list(if free)
+*/
+
+MIRRORSTATUS heap_init(PVOID start, ULONG heap_size, PVOID free_bin_head)
 {
-    if ( (DWORD)start < (DWORD)HEAP_START \
-            || (DWORD)start + heap_size > (DWORD)HEAP_MAX \
-            || (DWORD)start + heap_size < (DWORD)HEAP_START \
-            || (DWORD)start > (DWORD)HEAP_MAX )
-        return -EFAULT;
+    PVOID top_chunk = NULL;
 
-    if ( heap_size < (DWORD)HEAP_PAGE_SZ )
-        heap_size = HEAP_PAGE_SZ; // upsize to page size
-    
-    if ( heap_size % HEAP_PAGE_SZ ) // not page aligned, reject
-        return -EINVAL;
+    // check against default heap pool range
+    if ( (ULONG)start < (ULONG)HEAP_START \
+            || (ULONG)start + heap_size > (ULONG)HEAP_MAX \
+            || (ULONG)start + heap_size < (ULONG)HEAP_START \
+            || (ULONG)start > (ULONG)HEAP_MAX )
+        return STATUS_EINVAL;
 
-    if ( (DWORD)start % HEAP_ALIGN_SZ )
-        return -EINVAL;
+    if ( heap_size % HEAP_PAGE_SZ ) // upsize to page alignment
+        heap_size += (HEAP_PAGE_SZ - (heap_size % HEAP_PAGE_SZ));
 
-    *(PDWORD)free_bin_head = (DWORD)start;
-    PVOID top_chunk = *(PVOID*)free_bin_head;
+    if ( (ULONG)start % HEAP_ALIGN_SZ ) // start of heap must be page aligned
+        return STATUS_EINVAL;
+
+    // set head of doubly linked free bins list
+    *(PULONG)free_bin_head = (ULONG)start;
+
+    // set "top chunk", the big initial chunk to split chunks from
+    top_chunk = (PVOID)(*(PULONG)free_bin_head);
+
+    // set top chunk size, top chunk is always "in use", but linked into free bin
     chunk_set_size(top_chunk, (heap_size | PREV_INUSE));
-    // first chunk, fd bk points back
+    // first chunk, fd bk points back to itself
     chunk_set_fd(top_chunk, top_chunk);
     chunk_set_bk(top_chunk, top_chunk);
+
     return 0;
 }
 
-ULONG align_heap_chunks(ULONG chunk_size)
+ULONG heap_align_heap_chunk(ULONG chunk_size)
 {
-    return (chunk_size % CHUNK_ALIGN_SZ) ? \
-    (CHUNK_ALIGN_SZ + (chunk_size) - (chunk_size % CHUNK_ALIGN_SZ)) : \
+    return (chunk_size % HEAP_CHUNK_ALIGN_SZ) ? \
+    (HEAP_CHUNK_ALIGN_SZ + (chunk_size) - (chunk_size % HEAP_CHUNK_ALIGN_SZ)) : \
     chunk_size;
 }
 
 PVOID heap_allocate(PVOID free_bin_head, ULONG chunk_size)
 {
-    chunk_size += 8; // for header
+    PVOID chunk = NULL;
 
-    if (chunk_size < (DWORD)MIN_CHUNK_SZ)
-        chunk_size = (DWORD)MIN_CHUNK_SZ;
-    chunk_size = align_heap_chunks(chunk_size);
+    chunk_size += 0x8; // for size header
+
+    if (chunk_size < (ULONG)HEAP_MIN_CHUNK_SZ)
+        chunk_size = (ULONG)HEAP_MIN_CHUNK_SZ;
+    chunk_size = heap_align_heap_chunk(chunk_size);
     
-    PVOID chunk = heap_find_available(free_bin_head, chunk_size);
-    if (chunk == NULL)
+    // perform search to find required chunk size
+    chunk = heap_find_available(free_bin_head, chunk_size);
+    if (!chunk)
         return NULL;
-    return (chunk+0x10);
+
+    return (chunk+0x10); // user data
 }
 
 PVOID chunk_fd(PVOID cur)
 {
-    return (PVOID)(*(PDWORD)(cur + 16));
+    return (PVOID)(*(PULONG)(cur + 0x10));
 }
 
 PVOID chunk_bk(PVOID cur)
 {
-    return (PVOID)(*(PDWORD)(cur + 24));
+    return (PVOID)(*(PULONG)(cur + 0x18));
 }
 
 VOID chunk_set_size(PVOID addr, ULONG chunk_size)
 {
-    *(PDWORD)(addr + 8) = chunk_size;
+    *(PULONG)(addr + 0x8) = chunk_size;
 }
 
 VOID chunk_set_fd(PVOID addr, PVOID fd)
 {
-    *(PDWORD)(addr + 16) = (DWORD)fd;
+    *(PULONG)(addr + 0x10) = (ULONG)fd;
 }
 
 VOID chunk_set_bk(PVOID addr, PVOID bk)
 {
-    *(PDWORD)(addr + 24) = (DWORD)bk;
+    *(PULONG)(addr + 0x18) = (ULONG)bk;
 }
 
 PVOID heap_find_available(PVOID free_bin_head, ULONG chunk_size)
 {
-    PVOID cur = *((PVOID*)free_bin_head);
-    ULONG cur_chunksize;
+    PVOID   cur, ret, B, F, old_cur;
+    ULONG   cur_chunksize;
 
-    while (chunk_fd(cur) != *((PVOID*)free_bin_head))
+    cur = *(PVOID *)free_bin_head;
+
+    // traverse linked list until we reach the last block or find desired size
+    while ((ULONG)chunk_fd(cur) != *(PULONG)free_bin_head)
     {
         cur_chunksize = chunksize_nomask(chunksize_at_mem(cur));
         if ( cur_chunksize < chunk_size )
@@ -88,22 +111,22 @@ PVOID heap_find_available(PVOID free_bin_head, ULONG chunk_size)
             continue;
         }
 
-        // found suitable chunk, unlink if exhausted
-        PVOID ret = cur;
-        PVOID B = chunk_bk(cur);
-        PVOID F = chunk_fd(cur);
+        // found suitable chunk, unlink if exhausted(less than min size)
+        ret = cur;
+        B = chunk_bk(cur);
+        F = chunk_fd(cur);
 
         cur_chunksize -= chunk_size;
 
-        if ( cur_chunksize < MIN_CHUNK_SZ )
+        if ( cur_chunksize < HEAP_MIN_CHUNK_SZ )
         {
-            // return all if can't be allocated again;
+            // return all if can't be allocated again
             chunk_size += cur_chunksize;
             cur_chunksize = 0;
 
-            if ( cur == *((PVOID*)free_bin_head) ) // first chunk
+            if ( cur == *(PVOID *)free_bin_head ) // if first chunk(current free bin head), update to next
             {
-                *((PVOID*)free_bin_head) = chunk_fd(cur);
+                *(PULONG)(free_bin_head) = (ULONG)chunk_fd(cur);
                 unlink(cur);
             }
             else
@@ -117,52 +140,55 @@ PVOID heap_find_available(PVOID free_bin_head, ULONG chunk_size)
             return ret;
         }
 
-        // if no unlink
+        // if no unlink, update fd and bk of chunk, because we "shrank" it
         chunk_set_fd(B, cur + chunk_size);
         chunk_set_bk(F, cur + chunk_size);
 
+        // set size for our newly carved out chunk
         chunk_set_size(cur, (chunk_size | PREV_INUSE));
 
-        PVOID old_cur = cur;
-        cur += chunk_size;
+        old_cur = cur;
+        cur += chunk_size; // the remaining "shrank" chunk
         chunk_set_size(cur, (cur_chunksize | PREV_INUSE));
 
         // write new fd and bk
         chunk_set_fd(cur, F);
         chunk_set_bk(cur, B);
 
-        // update PREV_SIZE field
-        *(PDWORD)(cur + chunk_size) = chunk_size;
-
         // if bin head, update bin head
-        if (  old_cur == *((PVOID*)free_bin_head) )
-            *((PVOID*)free_bin_head) = cur;
+        if (  old_cur == *(PVOID *)free_bin_head )
+            *(PULONG)free_bin_head = (ULONG)cur;
 
         return ret;
     }
 
-    cur_chunksize = chunksize_nomask(chunksize_at_mem(cur));
-    if ( chunk_fd(cur) == *((PVOID*)free_bin_head) )
+    // search exhausted, no free linked chunks found
+    if ( (ULONG)chunk_fd(cur) == *(PULONG)free_bin_head )
     {
         // we are the last chunk left (top chunk)
-        if ( cur_chunksize < chunk_size )
-            return NULL; // no more memory
-        PVOID ret = cur;
-        PVOID B = chunk_bk(cur);
-        PVOID F = chunk_fd(cur);
-        chunk_set_size(cur, (chunk_size | PREV_INUSE));
-        cur += chunk_size;
+        cur_chunksize = chunksize_nomask(chunksize_at_mem(cur));
 
+        if ( cur_chunksize < chunk_size )
+            return NULL; // no more memory :(
+
+        ret = cur;
+        B = chunk_bk(cur);
+        F = chunk_fd(cur);
+        chunk_set_size(cur, (chunk_size | PREV_INUSE));
+
+        // fix the pointers of back and forward chunk
+        cur += chunk_size;
         chunk_set_fd(B, cur);
         chunk_set_bk(F, cur);
         
-        cur_chunksize -= chunk_size; // don't unlink because last chunk
+        // fix new top chunk size
+        cur_chunksize -= chunk_size;
         chunk_set_size(cur, (cur_chunksize | PREV_INUSE));
 
         // if top chunk is only chunk, shift bin pointer also
-        if ( cur-chunk_size == *((PVOID*)free_bin_head) )
+        if ( (ULONG)((ULONG)cur-(ULONG)chunk_size) == *(PULONG)free_bin_head )
         {
-            *((PVOID*)free_bin_head) = cur;
+            *(PULONG)free_bin_head = (ULONG)cur;
             chunk_set_fd(cur, cur);
             chunk_set_bk(cur, cur);
         }
@@ -180,54 +206,61 @@ PVOID heap_find_available(PVOID free_bin_head, ULONG chunk_size)
 
 VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
 {
-    INT merged_back = 0, merged_front = 0;
-    chunk_addr -= 0x10;
+    BYTE        merged_back = 0, merged_front = 0;
+    ULONG       chunk_sz_mask, chunk_sz_nomask, prev_sz;
+    ULONG       new_sz, old_top_sz, new_top_sz, new_next_chunk_sz;
+    PVOID       cur, topchunk_addr, target, top_bk;
+    PVOID       new_top, next_chunk_addr, next_next_chunk_addr;
+    PVOID       new_next_chunk, head, head_bk;
+    PVOID       next_chunk_bk, next_chunk_fd;
+
+    chunk_addr -= 0x10; // reach actual heap metadata
 
     // only allowed to free memory in the heap region
-    if ( (DWORD)chunk_addr < HEAP_START \
-        || (DWORD)chunk_addr > HEAP_MAX )
+    if ( (ULONG)chunk_addr < HEAP_START \
+        || (ULONG)chunk_addr > HEAP_MAX )
         return;
     
-    ULONG chunk_size_mask = chunksize_at_mem(chunk_addr);
-    ULONG chunk_sz_nomask = chunksize_nomask(chunk_size_mask);
-    PVOID topchunk_addr = chunk_bk(*((PVOID*)free_bin_head));
+    chunk_sz_mask = chunksize_at_mem(chunk_addr);
+    chunk_sz_nomask = chunksize_nomask(chunk_sz_mask);
+    topchunk_addr = chunk_bk(*(PVOID *)free_bin_head);
 
     // check backward consolidation
-    if ( !prev_inuse(chunk_size_mask) )
+    if ( !prev_inuse(chunk_sz_mask) )
     {
         // get to prev chunk by PREV_SIZE field
-        PVOID target = chunk_addr - *(PDWORD)(chunk_addr);
-        ULONG old_sz = chunksize_nomask(chunksize_at_mem(target));
-        ULONG new_sz = old_sz + chunk_sz_nomask;
+        target = chunk_addr - *(PULONG)(chunk_addr);
+        prev_sz = chunksize_nomask(chunksize_at_mem(target));
+        new_sz = prev_sz + chunk_sz_nomask;
         chunk_set_size(target, (new_sz | PREV_INUSE));
 
         // now check this big chunk
         chunk_addr = target;
-        chunk_size_mask = (new_sz | PREV_INUSE);
+        chunk_sz_mask = (new_sz | PREV_INUSE);
         chunk_sz_nomask = new_sz;
 
         merged_back = 1;
     }
 
     // if next chunk is top chunk, consolidate
-    if ( (DWORD)chunk_addr + chunk_sz_nomask == (DWORD)topchunk_addr )
+    if ( (ULONG)chunk_addr + chunk_sz_nomask == (ULONG)topchunk_addr )
     {
-        PVOID top_bk = chunk_bk(topchunk_addr);
-        ULONG old_top_sz = chunksize_at_mem(topchunk_addr);
-        ULONG new_top_sz = old_top_sz + chunk_sz_nomask;
-        PVOID new_top = topchunk_addr - chunk_sz_nomask;
+        top_bk = chunk_bk(topchunk_addr);
+        old_top_sz = chunksize_at_mem(topchunk_addr);
+        new_top_sz = old_top_sz + chunk_sz_nomask;
+        new_top = topchunk_addr - chunk_sz_nomask; // move top chunk backwards
 
-        if (top_bk == *((PVOID*)free_bin_head))
+        if (top_bk == *(PVOID *)free_bin_head)
         // if only top chunk in free bin
         {
-            *((PVOID*)free_bin_head) = new_top;
+            *(PULONG)free_bin_head = (ULONG)new_top;
             chunk_set_fd(new_top, new_top);
             chunk_set_bk(new_top, new_top);
         }
         else
         {
             chunk_set_fd(top_bk, new_top);
-            chunk_set_bk(*((PVOID*)free_bin_head), new_top);
+            chunk_set_bk(*(PVOID *)free_bin_head, new_top);
         }
 
         chunk_set_size(new_top, new_top_sz);
@@ -236,10 +269,10 @@ VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
         if (merged_back)
         // if merged back and merge with top, unlink back chunk
         {
-            PVOID cur = *((PVOID*)free_bin_head);
+            cur = *(PVOID *)free_bin_head;
             while (chunk_fd(cur) != free_bin_head)
             {
-                if (cur == topchunk_addr)
+                if (cur == topchunk_addr) // topchunk_addr is now addr of merged chunk
                 {
                     unlink(cur);
                     break;
@@ -253,30 +286,30 @@ VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
     }
 
     // unset inuse bit for next
-    PVOID next_chunk_addr = chunk_addr + chunk_sz_nomask;
+    next_chunk_addr = chunk_addr + chunk_sz_nomask;
     chunk_set_size(next_chunk_addr, chunksize_nomask(\
         chunksize_at_mem(next_chunk_addr)));
 
     // set PREV_SIZE field for next
-    *(PDWORD)next_chunk_addr = chunk_sz_nomask;
+    *(PULONG)next_chunk_addr = chunk_sz_nomask;
 
     // check forward consolidation
-    PVOID next_next_chunk_addr = next_chunk_addr + \
+    next_next_chunk_addr = next_chunk_addr + \
         chunksize_nomask(chunksize_at_mem(next_chunk_addr));
     
-    if ( (DWORD)next_next_chunk_addr < (DWORD)topchunk_addr )
+    if ( (ULONG)next_next_chunk_addr < (ULONG)topchunk_addr )
     {
         if ( !prev_inuse(chunksize_at_mem(next_next_chunk_addr)) )
         {
             merged_front = 1;
-            PVOID new_next_chunk = next_chunk_addr - *(PDWORD)next_chunk_addr;
-            ULONG new_next_chunk_sz = chunksize_nomask(chunksize_at_mem(next_chunk_addr)) +\
-                 *(PDWORD)next_chunk_addr;
+            new_next_chunk = next_chunk_addr - *(PULONG)next_chunk_addr; // prev_size
+            new_next_chunk_sz = chunksize_nomask(chunksize_at_mem(next_chunk_addr)) +\
+                 *(PULONG)next_chunk_addr;
 
             if (merged_back)
             // needs unlinking
             {
-                PVOID cur = *((PVOID*)free_bin_head);
+                cur = *(PVOID *)free_bin_head;
                 while (chunk_fd(cur) != free_bin_head)
                 {
                     if (cur == new_next_chunk)
@@ -288,9 +321,10 @@ VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
                 }
             }
 
-            PVOID next_chunk_bk = chunk_bk(next_chunk_addr);
-            PVOID next_chunk_fd = chunk_fd(next_chunk_addr);
+            next_chunk_bk = chunk_bk(next_chunk_addr);
+            next_chunk_fd = chunk_fd(next_chunk_addr);
 
+            // update the fd and bk pointers to point to our enlarged free chunk
             chunk_set_fd(next_chunk_bk, new_next_chunk);
             chunk_set_bk(next_chunk_fd, new_next_chunk);
             chunk_set_fd(new_next_chunk, next_chunk_fd);
@@ -300,31 +334,34 @@ VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
             
             // now this is new cur chunk
             chunk_addr = new_next_chunk;
-            chunk_size_mask = chunksize_at_mem(new_next_chunk);
-            chunk_sz_nomask = chunksize_nomask(chunk_size_mask);
+            chunk_sz_mask = chunksize_at_mem(new_next_chunk);
+            chunk_sz_nomask = chunksize_nomask(chunk_sz_mask);
         }
     }
+    else
+        ; // corruption detected, maybe do something in the future
 
     // all checks done, check if need to link into bin head
     if (merged_back || merged_front)
         return;
 
-    PVOID head = *((PVOID*)free_bin_head);
-
-    PVOID head_bk = chunk_bk(head);
+    head = *(PVOID *)free_bin_head;
+    head_bk = chunk_bk(head);
+    
+    // link our new free chunk into free chunk list
     chunk_set_fd(chunk_addr, head);
     chunk_set_bk(chunk_addr, head_bk);
     chunk_set_fd(head_bk, chunk_addr);
     chunk_set_bk(head, chunk_addr);
 
-    *((PVOID*)free_bin_head) = chunk_addr;
+    *(PULONG)free_bin_head = (ULONG)chunk_addr;
 
     return;
 }
 
 ULONG chunksize_at_mem(PVOID addr)
 {
-    return *(PDWORD)(addr+8);
+    return *(PULONG)(addr+0x8);
 }
 
 VOID unlink(PVOID cur)

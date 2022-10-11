@@ -1,4 +1,5 @@
 #include "kernel.h"
+#include "status.h"
 #include "types.h"
 #include "disk/disk.h"
 #include "disk/streamer.h"
@@ -73,22 +74,43 @@ VOID terminal_write(PCSTR str, BYTE colour)
         terminal_checkputchar(str[i], colour);
 }
 
-static PPAGE_CHUNK kernel_pagechunk = NULL;
+VOID kernel_panic(PCSTR msg)
+{
+    terminal_warn(msg);
+    while (1) ;
+}
 
 VOID kernel_main(VOID)
 {
-    terminal_init(); // initialise terminal
-    kheap_init(); // initialise kernel heap
-    fs_init(); // initialise filesystems
-    disk_search_init(); // initialise disks
-    idt_init(); // initialise IDT
+    MIRRORSTATUS        status = STATUS_SUCCESS;
+    PPAGE_CHUNK         kernel_pagechunk = NULL;
+
+    // initialise terminal
+    terminal_init();
+
+    // initialise kernel heap
+    status = kheap_init();
+    if (!MIRROR_SUCCESS(status))
+        kernel_panic("[-] Kernel Heap Initialization Failed\n");
+
+    // initialise filesystems
+    fs_init();
+
+    // initialise disks
+    disk_search_init();
+
+    // initialise IDT
+    idt_init();
     
     // setup paging
-    kernel_pagechunk = new_page_chunk(PAGING_RDWR | PAGING_IS_PRESENT | PAGING_USER_ACCESS);
-    paging_switch_dir(kernel_pagechunk->pagedir);
+    status = paging_new_pagechunk(&kernel_pagechunk, PAGING_RDWR | PAGING_IS_PRESENT | PAGING_USER_ACCESS);
+    if (!MIRROR_SUCCESS(status))
+        kernel_panic("[-] Paging Initialization Failed\n");
+        
+    paging_switch_pagedir(kernel_pagechunk->pagedir);
 
     // enable paging
-    paging_enable();
+    paging_enable_paging();
 
     __asm__("sti;"); // enable interrupts
     

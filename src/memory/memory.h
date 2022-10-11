@@ -5,7 +5,7 @@
 
 #define PAGE_ALLOC_START 0x2100000
 #define PAGE_ALLOC_MAX 0x2500000
-#define MAX_PAGE_IDX 1024
+#define MAX_PAGE_IDX 4096*10
 #define PAGE_ALLOC_TABLE 0x00007f00
 #define PAGE_SZ 4096
 
@@ -14,6 +14,7 @@ INT memcmp(PVOID s1, PVOID s2, INT count);
 PVOID memcpy(PVOID dest, PVOID src, INT len);
 
 PVOID page_alloc(VOID);
+PVOID page_alloc_zero(VOID);
 VOID page_free(PVOID page);
 
 #endif
