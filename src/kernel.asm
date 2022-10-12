@@ -44,17 +44,45 @@ ICW4_BUF_SLAVE EQU 0x08	; Buffered mode/slave
 ICW4_BUF_MASTER EQU 0x0C	; Buffered mode/master
 ICW4_SFNM EQU 0x10	; Special fully nested (not)
 
-; remap master PIC
+; remap PICs
 
-mov al, ICW1_INIT ; starts the initialization sequence (in cascade mode)
+; save masks
+in al, PICM_DATA
+mov bl, al
+in al, PICS_DATA
+mov cl, al
+
+mov al, ICW1_INIT ; starts the initialization sequence (in cascade mode) for master
 or al, ICW1_ICW4 ; require ICW4
 out PICM_COMMAND, al
 
-mov al, 0x20 ; remap hardware interrupts to start from 0x20, because 0x0-0x20 is reserved by Intel x86 exception addresses
+mov al, ICW1_INIT ; starts the initialization sequence (in cascade mode) for slave
+or al, ICW1_ICW4 ; require ICW4
+out PICS_COMMAND, al
+
+mov al, 0x20 ; remap master interrupts to start from 0x20 to 0x27, because 0x0-0x20 is reserved by software exceptions
 out PICM_DATA, al
 
-mov al, ICW4_8086 ; x86 mode
+mov al, 0x28
+out PICS_DATA, al ; remap slave to start from 0x28 to 0x3f, same reason as above
+
+mov al, 0x4
+out PICM_DATA, al ; tell Master PIC that there is a slave PIC at IRQ2 (0000 0100)
+
+mov al, 0x2
+out PICS_DATA, al ; tell Slave PIC its cascade identity (0000 0010)
+
+mov al, ICW4_8086 ; x86 mode master
 out PICM_DATA, al
+
+mov al, ICW4_8086 ; x86 mode slave
+out PICS_DATA, al
+
+; restore masks
+mov al, bl
+out PICM_DATA, al
+mov al, cl
+out PICS_DATA, al
 
 ; Done remapping master PIC
 

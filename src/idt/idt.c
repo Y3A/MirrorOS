@@ -4,8 +4,7 @@
 #include "idt/idt.h"
 #include "memory/memory.h"
 
-IDT_ENTRY idt[TOTAL_INTERRUPTS];
-IDT_DESC idt_desc;
+IDT_ENTRY idt[TOTAL_INTERRUPTS]; // include exceptions and irqs
 
 VOID idt_init(VOID)
 /*
@@ -13,7 +12,9 @@ VOID idt_init(VOID)
     * Initializing IDT Entries and IDT Descriptor, then loading it
 */
 {
-    memset(idt, 0, sizeof(idt));
+    IDT_DESC idt_desc;
+
+    unbound_memset(idt, 0, sizeof(idt));
     idt_desc.limit = sizeof(idt)-1;
     idt_desc.base = (DWORD)idt;
 

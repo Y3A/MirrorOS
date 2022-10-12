@@ -31,8 +31,7 @@ VOID idt_set(INT interrupt_number, PVOID isr_addr);
 VOID idt_load(PIDT_DESC idt_desc_addr);
 
 /* Actual Interrupts */
-
-    VOID idt_void(VOID);
+VOID idt_void(VOID);
 VOID idt_div_by_zero(VOID);
 VOID idt_key_press(VOID);
 

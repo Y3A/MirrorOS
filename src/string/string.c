@@ -6,14 +6,14 @@ BOOL isdigit(CHAR c)
     return c >= 48 && c <= 57;
 }
 
-ULONG strlen(PCSTR str)
+ULONG unbound_strlen(PCSTR str)
 {
     ULONG ptr = 0;
     while (str[ptr++]) ;
     return ptr;
 }
 
-ULONG strnlen(PCSTR str, ULONG max)
+ULONG unbound_strnlen(PCSTR str, ULONG max)
 {
     ULONG ptr = 0;
     for (ptr = 0; ptr < max && str[ptr]; ptr++) ;
@@ -25,7 +25,7 @@ INT char2int(CHAR c)
     return c - 48;
 }
 
-PSTR strcpy(PSTR dest, PCSTR src)
+PSTR unbound_strcpy(PSTR dest, PCSTR src)
 {
     while (*src)
         *(dest++) = *(src++);
@@ -34,7 +34,7 @@ PSTR strcpy(PSTR dest, PCSTR src)
     return dest;
 }
 
-INT strcmp(PCSTR str1, PCSTR str2)
+INT unbound_strcmp(PCSTR str1, PCSTR str2)
 {
     while (*str1 && *str2)
         if (*str1++ != *str2++)
@@ -52,7 +52,7 @@ CHAR tolower(CHAR s1)
     return s1;
 }
 
-INT istrncmp(PCSTR s1, PCSTR s2, INT n)
+INT unbound_istrncmp(PCSTR s1, PCSTR s2, INT n)
 {
     BYTE u1, u2;
 

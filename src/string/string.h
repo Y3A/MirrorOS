@@ -3,13 +3,13 @@
 
 #include "types.h"
 
-ULONG strlen(PCSTR str);
+ULONG unbound_strlen(PCSTR str);
 INT char2int(CHAR c);
 BOOL isdigit(CHAR c);
-ULONG strnlen(PCSTR str, ULONG max);
-PSTR strcpy(PSTR dest, PCSTR src);
-INT strcmp (PCSTR str1, PCSTR str2);
+ULONG unbound_strnlen(PCSTR str, ULONG max);
+PSTR unbound_strcpy(PSTR dest, PCSTR src);
+INT unbound_strcmp (PCSTR str1, PCSTR str2);
 CHAR tolower(CHAR s1);
-INT istrncmp(PCSTR s1, PCSTR s2, INT n);
+INT unbound_istrncmp(PCSTR s1, PCSTR s2, INT n);
 
 #endif

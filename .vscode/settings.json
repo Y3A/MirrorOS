@@ -31,6 +31,7 @@
         "ostream": "c",
         "sstream": "c",
         "fat16.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "vga.h": "c"
     }
 }

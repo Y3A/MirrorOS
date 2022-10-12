@@ -9,9 +9,10 @@
 #define PAGE_ALLOC_TABLE 0x00007f00
 #define PAGE_SZ 4096
 
-PVOID memset(PVOID ptr, INT c, ULONG size);
-INT memcmp(PVOID s1, PVOID s2, INT count);
-PVOID memcpy(PVOID dest, PVOID src, INT len);
+// kernel memory functions, usermode code eventually call these after checks
+PVOID unbound_memset(PVOID ptr, INT c, ULONG size);
+INT unbound_memcmp(PVOID s1, PVOID s2, INT count);
+PVOID unbound_memcpy(PVOID dest, PVOID src, INT len);
 
 PVOID page_alloc(VOID);
 PVOID page_alloc_zero(VOID);

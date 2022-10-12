@@ -1,7 +1,7 @@
 #include "memory.h"
 #include "types.h"
 
-PVOID memset(PVOID ptr, INT c, ULONG size)
+PVOID unbound_memset(PVOID ptr, INT c, ULONG size)
 {
     PSTR base = (PSTR)ptr;
     for (INT i = 0; i < size; i++)
@@ -30,7 +30,7 @@ PVOID page_alloc_zero(VOID)
     if (!new_page)
         return NULL;
 
-    memset(new_page, 0, PAGE_SZ);
+    unbound_memset(new_page, 0, PAGE_SZ);
     
     return new_page;
 }
@@ -43,7 +43,7 @@ VOID page_free(PVOID page)
             *(start + i) = 0;
 }
 
-INT memcmp(PVOID s1, PVOID s2, INT count)
+INT unbound_memcmp(PVOID s1, PVOID s2, INT count)
 {
     PSTR c1 = s1;
     PSTR c2 = s2;
@@ -53,7 +53,7 @@ INT memcmp(PVOID s1, PVOID s2, INT count)
     return 0;
 }
 
-PVOID memcpy(PVOID dest, PVOID src, INT len)
+PVOID unbound_memcpy(PVOID dest, PVOID src, INT len)
 {
     PSTR d = dest;
     PSTR s = src;

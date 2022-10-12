@@ -7,36 +7,6 @@ BITS 16 ; 16-Bit real mode addressing
 GDT_CS equ 1000b ; index 1 in GDT, 0 for GDT and 00 for privileged
 GDT_DATA equ 10000b ; index 2 in GDT, 0 for GDT and 00 for privileged
 
-; jump over BIOS parameter block, which is obviously not code
-jmp short set_cs
-nop ; required by https://wiki.osdev.org/FAT#BPB_.28BIOS_Parameter_Block.29
-
-; BIOS parameter block
-
-; FAT16 header
-db "MIRROROS"    ; OEMIdentifier, garbage
-dw 512           ; BytesPerSector
-db 128           ; SectorsPerCluster
-dw 200           ; 200 reserved sectors for kernel
-db 2             ; number of FATs, 1 orig and 1 backup
-dw 64            ; number of directory entries
-dw 0             ; total number of sectors ( unused )
-db 0xf8          ; MediaDescriptor
-dw 256           ; number of sectors per FAT
-dw 01            ; number of sectors per track ( unused )
-dw 01            ; number of heads ( unused )
-dd 0             ; number of hidden sectors
-dd 1000000       ; total number of sectors ( used )
-
-db 0x80          ; drive number, 0x80 for hard disks
-db 0             ; reserved
-db 0x29          ; extended boot signature
-dd 0xcafe        ; volume ID (serial number), garbage?
-db "MIRROROS   " ; volume label, garbage, padded to 11 bytes with space(0x20)
-db "FAT16   "    ; file system type, just for display, garbage, padded to 8 bytes with space(0x20)
-
-; End of BPB
-
 set_cs:
 jmp 0:start ; set CS to 0 in case it isn't already, just for safety
 
@@ -143,7 +113,7 @@ out dx, al
 
 ; send highest 4 bits of lba and drive option
 shr eax, 24
-or eax, 0xe0 ; select master drive
+or eax, 11100000 ; bit 5 unset for master drive, bit 6 and 8 ignored for lba, bit 7 for lba mode https://wiki.osdev.org/ATA_PIO_Mode#28_bit_PIO
 mov dx, 0x1f6 ; port to send high 8 bits to
 out dx, al
 

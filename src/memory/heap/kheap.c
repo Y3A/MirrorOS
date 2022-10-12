@@ -20,7 +20,7 @@ PVOID kzalloc(ULONG chunk_size)
     if (!ptr)
         return NULL;
         
-    memset(ptr, 0, chunk_size);
+    unbound_memset(ptr, 0, chunk_size);
     return ptr;
 }
 
