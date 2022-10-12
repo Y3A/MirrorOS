@@ -80,7 +80,7 @@ BITS 32
 
 load_32:
 mov eax, 1 ; start from sector 1 since 0 is boot sector
-mov ecx, 200
+mov ecx, 200 ; load 200 sectors
 mov edi, 0x100000
 call ata_lba_read
 jmp GDT_CS:0x100000 ; jmp to kernel code loaded at 0x100000 after lba read is done

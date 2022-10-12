@@ -6,7 +6,7 @@ FLAGS = -g -ffreestanding -falign-jumps -falign-functions -falign-labels -falign
 all: $(BINS)
 	dd if=./bin/boot.bin >> ./bin/os.bin
 	dd if=./bin/kernel.bin >> ./bin/os.bin # boot sector goes first, then the kernel which is loaded by the former.
-	dd if=/dev/zero bs=1048576 count=16 >> ./bin/os.bin # pad the size up for enough "ram"
+	dd if=/dev/zero bs=512 count=200 >> ./bin/os.bin # pad some bytes for the bootloader to load first, so we don't have to change when our kernel increases in size
 
 ./bin/boot.bin: ./src/boot/boot.asm
 	nasm -f bin ./src/boot/boot.asm -o ./bin/boot.bin
