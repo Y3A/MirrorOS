@@ -13,12 +13,16 @@ typedef BYTE DRIVE_TYPE;
 #define MASTER_DRIVE ((DRIVE_TYPE)(0xe0))
 #define SLAVE_DRIVE  ((DRIVE_TYPE)(0xf0))
 
+#define MASTER_IDENTIFY ((BYTE)(0xa0))
+#define SLAVE_IDENTIFY ((BYTE)(0xb0))
+
 #define CONTROL_REG 0x3f6
 #define CONTROL_RESET 0x4
 #define CONTROL_ZERO 0x0
 
 #define ATA_READ ((BYTE)(0x20))
 #define ATA_WRITE ((BYTE)(0x30))
+#define ATA_IDENTIFY ((BYTE)(0xec))
 
 VOID ata_init(VOID);
 VOID ata_reset(VOID);

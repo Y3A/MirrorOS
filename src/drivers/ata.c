@@ -43,12 +43,12 @@ MIRRORSTATUS ata_identify_master(VOID)
 
     ata_reset();
 
-    outsb(0x1f6, 0xa0);
+    outsb(0x1f6, MASTER_IDENTIFY);
     outsb(0x1f2, (dummy_sectors & 0xff));
     outsb(0x1f3, (dummy_lba & 0xff));
     outsb(0x1f4, (dummy_lba >> 8) & 0xff);
     outsb(0x1f5, (dummy_lba >> 16) & 0xff);
-    outsb(0x1f7, 0xec);
+    outsb(0x1f7, ATA_IDENTIFY);
 
     read = insb(0x1f7);
 
@@ -68,12 +68,12 @@ MIRRORSTATUS ata_identify_slave(VOID)
 
     ata_reset();
 
-    outsb(0x1f6, 0xb0);
+    outsb(0x1f6, SLAVE_IDENTIFY);
     outsb(0x1f2, (dummy_sectors & 0xff));
     outsb(0x1f3, (dummy_lba & 0xff));
     outsb(0x1f4, (dummy_lba >> 8) & 0xff);
     outsb(0x1f5, (dummy_lba >> 16) & 0xff);
-    outsb(0x1f7, 0xec);
+    outsb(0x1f7, ATA_IDENTIFY);
 
     read = insb(0x1f7);
 
