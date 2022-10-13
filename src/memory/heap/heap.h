@@ -19,6 +19,7 @@
 MIRRORSTATUS heap_init(PVOID start, ULONG heap_size, PVOID free_bin_head);
 PVOID heap_allocate(PVOID free_bin_head, ULONG chunk_size);
 ULONG heap_align_heap_chunk(ULONG chunk_size);
+ULONG heap_calculate_chunksize(ULONG init_chunk_size);
 
 PVOID heap_find_available(PVOID free_bin_head, ULONG chunk_size);
 VOID heap_free(PVOID free_bin_head, PVOID chunk_addr);

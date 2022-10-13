@@ -86,8 +86,8 @@ MIRRORSTATUS ata_identify_slave(VOID)
 MIRRORSTATUS ata_read(PVOID buf, ULONG size, ULONG offset, DRIVE_TYPE type)
 {
     ULONG       sectors;
-    DWORD       lba;
-    PVOID       read_buf;
+    DWORD       lba, remains;
+    PVOID       read_buf, cpy;
 
     if (type == MASTER_DRIVE && !g_master_exists)
         return STATUS_ENXIO;
@@ -95,27 +95,46 @@ MIRRORSTATUS ata_read(PVOID buf, ULONG size, ULONG offset, DRIVE_TYPE type)
     if (type == SLAVE_DRIVE && !g_slave_exists)
         return STATUS_ENXIO;
 
-    sectors = (sectors = size % SECTOR_SZ) ? sectors : (size / SECTOR_SZ + 1);
-    lba = (lba = offset%SECTOR_SZ) ? lba : (offset/SECTOR_SZ + 1);
+    /*
+     * if size is not sector(0x200) aligned, we ceiling it
+     * we floor the lba and return an user specified offset into it
+     */
+    sectors = !(size % SECTOR_SZ) ? (size / SECTOR_SZ) : (size / SECTOR_SZ + 1);
+    lba = offset / SECTOR_SZ;
+    remains = offset % SECTOR_SZ;
 
     read_buf = kzalloc(sectors * SECTOR_SZ);
+    cpy = read_buf;
 
     ata_read_sectors(read_buf, sectors, lba, type);
+
+    for (DWORD i = 0; i < size; i++)
+        *(PBYTE)buf++ = *(PBYTE)(cpy++ + remains);
+
+    kfree(read_buf);
 
     return STATUS_SUCCESS;
 }
 
-
 VOID ata_read_sectors(PVOID buf, BYTE sectors, DWORD lba, DRIVE_TYPE type)
 {
     /* https://wiki.osdev.org/ATA_read/write_sectors#Read_in_LBA_mode */
+
+    PWORD write = (PWORD)buf;
+
+    /*
+     * after the identify command we issued before
+     * there will be metadata left to read
+     * but we don't care so we just reset to flush the data
+     */ 
+    ata_reset();
 
     outsb(0x1f2, (sectors & 0xff));
     outsb(0x1f3, (lba & 0xff));
     outsb(0x1f4, (lba >> 8) & 0xff);
     outsb(0x1f5, (lba >> 16) & 0xff);
     outsb(0x1f6, ((lba >> 24) | type) & 0xff);
-    outsb(0x1f7, 0x20);
+    outsb(0x1f7, ATA_READ);
 
     for (BYTE i = 0; i < sectors; i++)
     {
@@ -124,7 +143,97 @@ VOID ata_read_sectors(PVOID buf, BYTE sectors, DWORD lba, DRIVE_TYPE type)
 
         // copy from hard disk to mem
         for (DWORD j = 0; j < (SECTOR_SZ/2); j++)
-            *(PWORD)buf++ = insw(0x1f0);
+            *write++ = insw(0x1f0);
+    }
+
+    return;
+}
+
+MIRRORSTATUS ata_write(PVOID buf, ULONG size, ULONG offset, DRIVE_TYPE type)
+{
+    ULONG sectors, write_buf_sz;
+    DWORD lba, remains, repair_back;
+    PVOID read_buf, write_buf, cpy_read, cpy_write;
+
+    if (type == MASTER_DRIVE && !g_master_exists)
+        return STATUS_ENXIO;
+
+    if (type == SLAVE_DRIVE && !g_slave_exists)
+        return STATUS_ENXIO;
+
+    sectors = !(size % SECTOR_SZ) ? (size / SECTOR_SZ) : (size / SECTOR_SZ + 1);
+    lba = offset / SECTOR_SZ;
+    remains = offset % SECTOR_SZ;
+    write_buf_sz = sectors * SECTOR_SZ;
+
+    write_buf = kzalloc(write_buf_sz);
+    cpy_write = write_buf;
+
+    read_buf = kzalloc(SECTOR_SZ);
+    cpy_read = read_buf;
+
+    /*
+     * if the offset is not sector aligned
+     * we will have to read in 1 sector of the lba
+     * so we can patch in the offset into the lba correctly
+     */
+
+    if (remains) {
+        ata_read_sectors(read_buf, 1, lba, type);
+        for (DWORD i = 0; i < remains; i++)
+            *(PBYTE)(cpy_write++) = *(PBYTE)(cpy_read++);
+    }
+
+    unbound_memset(read_buf, 0, SECTOR_SZ);
+    cpy_read = read_buf;
+
+    // patch in the actual user buffer
+    for (DWORD i = 0; i < size; i ++)
+        *(PBYTE)(cpy_write++) = *(PBYTE)buf++;
+
+    /*
+     * similarly, if the eventual write is not sector aligned
+     * we will have to patch in the back "unwritten" bytes
+     */
+
+    if ((remains + size) % write_buf_sz) {
+        repair_back = write_buf_sz - (remains + size);
+        ata_read_sectors(read_buf, 1, lba + ((remains + size) / \
+            SECTOR_SZ), type);
+        for (DWORD i = 0; i < repair_back; i++)
+            *(PBYTE)(cpy_write++) = *(PBYTE)(cpy_read++ + \
+            ((remains + size) % SECTOR_SZ));
+    }
+
+    ata_write_sectors(write_buf, sectors, lba, type);
+
+    kfree(read_buf);
+    kfree(write_buf);
+
+    return STATUS_SUCCESS;
+}
+
+VOID ata_write_sectors(PVOID buf, BYTE sectors, DWORD lba, DRIVE_TYPE type)
+{
+    PWORD write = (PWORD)buf;
+
+    ata_reset();
+
+    outsb(0x1f2, (sectors & 0xff));
+    outsb(0x1f3, (lba & 0xff));
+    outsb(0x1f4, (lba >> 8) & 0xff);
+    outsb(0x1f5, (lba >> 16) & 0xff);
+    outsb(0x1f6, ((lba >> 24) | type) & 0xff);
+    outsb(0x1f7, ATA_WRITE);
+
+    for (BYTE i = 0; i < sectors; i++)
+    {
+        // loop until ready to write
+        for (BYTE b = insb(0x1f7); !(b & 8); b = insb(0x1f7)) ;
+
+        // copy from mem to hard disk
+        for (DWORD j = 0; j < (SECTOR_SZ / 2); j++)
+            outsw(0x1f0, *write++);
     }
 
     return;

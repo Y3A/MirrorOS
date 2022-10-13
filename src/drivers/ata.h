@@ -17,11 +17,16 @@ typedef BYTE DRIVE_TYPE;
 #define CONTROL_RESET 0x4
 #define CONTROL_ZERO 0x0
 
+#define ATA_READ ((BYTE)(0x20))
+#define ATA_WRITE ((BYTE)(0x30))
+
 VOID ata_init(VOID);
 VOID ata_reset(VOID);
 MIRRORSTATUS ata_identify_master(VOID);
 MIRRORSTATUS ata_identify_slave(VOID);
 MIRRORSTATUS ata_read(PVOID buf, ULONG size, ULONG offset, DRIVE_TYPE type);
 VOID ata_read_sectors(PVOID buf, BYTE sectors, DWORD lba, DRIVE_TYPE type);
+MIRRORSTATUS ata_write(PVOID buf, ULONG size, ULONG offset, DRIVE_TYPE type);
+VOID ata_write_sectors(PVOID buf, BYTE sectors, DWORD lba, DRIVE_TYPE type);
 
 #endif

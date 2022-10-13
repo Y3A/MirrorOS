@@ -19,8 +19,8 @@ PVOID kzalloc(ULONG chunk_size)
     PVOID ptr = kmalloc(chunk_size);
     if (!ptr)
         return NULL;
-        
-    unbound_memset(ptr, 0, chunk_size);
+
+    unbound_memset(ptr, 0, heap_calculate_chunksize(chunk_size)-0x10);
     return ptr;
 }
 

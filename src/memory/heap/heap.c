@@ -6,7 +6,7 @@
     * Doubly-Linked free bins list to store freed heap chunks
     * Merge with forward and backward free chunks if possible
     * Heap block structure:
-    *       Chunk+0x00: prev_size(if prev chunk is free) or prev chunk data(if prev chunk inuse)
+    *       Chunk+0x00: prev_size(if prev chunk is free) or empty(if prev chunk inuse)
     *       Chunk+0x08: cur chunk size, last bit for previous chunk inuse if set
     *       Chunk+0x10: cur chunk user data start, forward pointer of free bins list(if free)
     *       CHunk+0x18: cur chunk data, backward pointer of free bins list(if free)
@@ -51,15 +51,21 @@ ULONG heap_align_heap_chunk(ULONG chunk_size)
     chunk_size;
 }
 
+ULONG heap_calculate_chunksize(ULONG init_chunk_size)
+{
+    init_chunk_size += 0x8; // for size header
+
+    if (init_chunk_size < (ULONG)HEAP_MIN_CHUNK_SZ)
+        init_chunk_size = (ULONG)HEAP_MIN_CHUNK_SZ;
+    
+    return heap_align_heap_chunk(init_chunk_size);
+}
+
 PVOID heap_allocate(PVOID free_bin_head, ULONG chunk_size)
 {
     PVOID chunk = NULL;
 
-    chunk_size += 0x8; // for size header
-
-    if (chunk_size < (ULONG)HEAP_MIN_CHUNK_SZ)
-        chunk_size = (ULONG)HEAP_MIN_CHUNK_SZ;
-    chunk_size = heap_align_heap_chunk(chunk_size);
+    chunk_size = heap_calculate_chunksize(chunk_size);
     
     // perform search to find required chunk size
     chunk = heap_find_available(free_bin_head, chunk_size);
