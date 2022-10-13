@@ -231,7 +231,7 @@ VOID ata_write_sectors(PVOID buf, BYTE sectors, DWORD lba, DRIVE_TYPE type)
         // loop until ready to write
         for (BYTE b = insb(0x1f7); !(b & 8); b = insb(0x1f7)) ;
 
-        // copy from mem to hard disk
+        // copy from hard disk to mem
         for (DWORD j = 0; j < (SECTOR_SZ / 2); j++)
             outsw(0x1f0, *write++);
     }
