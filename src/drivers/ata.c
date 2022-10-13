@@ -1,22 +1,131 @@
+#include "config.h"
+#include "status.h"
 #include "types.h"
 #include "drivers/ata.h"
+#include "drivers/vga.h"
+#include "io/io.h"
+#include "memory/heap/kheap.h"
 
-VOID ata_read(PVOID buf, ULONG size, BYTE bitmask)
+BOOL g_master_exists = FALSE, g_slave_exists = FALSE;
+
+VOID ata_init(VOID)
 {
-    ;
+    if (MIRROR_SUCCESS(ata_identify_master()))
+        g_master_exists = TRUE;
+    else
+        vga_warn("[-] Master Drive (OS) Not Detected\n");
+
+    if (MIRROR_SUCCESS(ata_identify_slave()))
+        g_slave_exists = TRUE;
+    else
+        vga_warn("[-] Slave Drive (FileSystem) Not Detected\n");
+
+    return;
 }
 
-VOID ata_read_master(PVOID buf, ULONG size)
+VOID ata_reset(VOID)
 {
-    ;
+    /* https://wiki.osdev.org/ATA_PIO_Mode#Resetting_a_drive_.2F_Software_Reset */
+    
+    outsb(CONTROL_REG, CONTROL_RESET);
+    for (int i = 0; i < 30000; i++) ; // simulate io_wait
+    outsb(CONTROL_REG, CONTROL_ZERO);
+    for (int i = 0; i < 30000; i++) ;
 }
 
-VOID ata_read_slave(PVOID buf, ULONG size)
+MIRRORSTATUS ata_identify_master(VOID)
 {
-    ;
+    /* https://wiki.osdev.org/ATA_PIO_Mode#IDENTIFY_command */
+
+    DWORD   dummy_sectors = 0;
+    DWORD   dummy_lba = 0;
+    BYTE    read = 0;
+
+    ata_reset();
+
+    outsb(0x1f6, 0xa0);
+    outsb(0x1f2, (dummy_sectors & 0xff));
+    outsb(0x1f3, (dummy_lba & 0xff));
+    outsb(0x1f4, (dummy_lba >> 8) & 0xff);
+    outsb(0x1f5, (dummy_lba >> 16) & 0xff);
+    outsb(0x1f7, 0xec);
+
+    read = insb(0x1f7);
+
+    if (read)
+        return STATUS_SUCCESS;
+    else
+        return STATUS_ENXIO;
 }
 
-VOID ata_read_sectors(PVOID buf, BYTE sectors)
+MIRRORSTATUS ata_identify_slave(VOID)
 {
-    ;
+    /* https://wiki.osdev.org/ATA_PIO_Mode#IDENTIFY_command */
+
+    DWORD   dummy_sectors = 0;
+    DWORD   dummy_lba = 0;
+    BYTE    read = 0;
+
+    ata_reset();
+
+    outsb(0x1f6, 0xb0);
+    outsb(0x1f2, (dummy_sectors & 0xff));
+    outsb(0x1f3, (dummy_lba & 0xff));
+    outsb(0x1f4, (dummy_lba >> 8) & 0xff);
+    outsb(0x1f5, (dummy_lba >> 16) & 0xff);
+    outsb(0x1f7, 0xec);
+
+    read = insb(0x1f7);
+
+    if (read)
+        return STATUS_SUCCESS;
+    else
+        return STATUS_ENXIO;
+}
+
+MIRRORSTATUS ata_read(PVOID buf, ULONG size, ULONG offset, DRIVE_TYPE type)
+{
+    ULONG       sectors;
+    DWORD       lba;
+    PVOID       read_buf;
+
+    if (type == MASTER_DRIVE && !g_master_exists)
+        return STATUS_ENXIO;
+
+    if (type == SLAVE_DRIVE && !g_slave_exists)
+        return STATUS_ENXIO;
+
+    sectors = (sectors = size % SECTOR_SZ) ? sectors : (size / SECTOR_SZ + 1);
+    lba = (lba = offset%SECTOR_SZ) ? lba : (offset/SECTOR_SZ + 1);
+
+    read_buf = kzalloc(sectors * SECTOR_SZ);
+
+    ata_read_sectors(read_buf, sectors, lba, type);
+
+    return STATUS_SUCCESS;
+}
+
+
+VOID ata_read_sectors(PVOID buf, BYTE sectors, DWORD lba, DRIVE_TYPE type)
+{
+    /* https://wiki.osdev.org/ATA_read/write_sectors#Read_in_LBA_mode */
+
+    outsb(0x1f2, (sectors & 0xff));
+    outsb(0x1f3, (lba & 0xff));
+    outsb(0x1f4, (lba >> 8) & 0xff);
+    outsb(0x1f5, (lba >> 16) & 0xff);
+    outsb(0x1f6, ((lba >> 24) | type) & 0xff);
+    outsb(0x1f7, 0x20);
+
+    for (BYTE i = 0; i < sectors; i++)
+    {
+        // loop until ready to read
+        for (BYTE b = insb(0x1f7); !(b & 8); b = insb(0x1f7)) ;
+
+        // copy from hard disk to mem
+        for (DWORD j = 0; j < (SECTOR_SZ/2); j++)
+            *(PWORD)buf++ = insw(0x1f0);
+    }
+
+    return;
 }

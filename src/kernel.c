@@ -2,6 +2,7 @@
 #include "status.h"
 #include "types.h"
 #include "drivers/vga.h"
+#include "drivers/ata.h"
 #include "idt/idt.h"
 #include "memory/paging/paging.h"
 #include "memory/heap/kheap.h"
@@ -17,8 +18,11 @@ VOID kernel_main(VOID)
     MIRRORSTATUS        status = STATUS_SUCCESS;
     PPAGE_CHUNK         kernel_pagechunk = NULL;
 
-    // initialise vga terminal
+    // initialise vga driver
     vga_init();
+
+    // initialize ata driver
+    ata_init();
 
     // initialise kernel heap
     status = kheap_init();
