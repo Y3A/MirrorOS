@@ -46,5 +46,9 @@ VOID kernel_main(VOID)
     
     vga_print("[+] All Initialised\n");
 
+    #include "fs/ext2fs.h"
+    if (!MIRROR_SUCCESS(ext2fs_init()))
+        vga_warn("no");
+
     while (1);
 }

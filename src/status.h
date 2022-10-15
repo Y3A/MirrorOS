@@ -40,6 +40,6 @@
 #define	STATUS_ERANGE       -34	/* Math result not representable */
 
 #define MIRROR_STATUS(value) ((INT)value)
-#define MIRROR_SUCCESS(value) (MIRROR_STATUS(value) >= 0)
+#define MIRROR_SUCCESS(value) (MIRROR_STATUS((value)) >= 0)
 
 #endif
