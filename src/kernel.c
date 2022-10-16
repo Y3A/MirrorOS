@@ -3,6 +3,7 @@
 #include "types.h"
 #include "drivers/vga.h"
 #include "drivers/ata.h"
+#include "fs/vfs.h"
 #include "idt/idt.h"
 #include "memory/paging/paging.h"
 #include "memory/heap/kheap.h"
@@ -42,13 +43,17 @@ VOID kernel_main(VOID)
     // enable paging
     paging_enable_paging();
 
+    status = vfs_init();
+    if (!MIRROR_SUCCESS(status))
+        kernel_panic("[-] VFS Initialization Failed\n");
+
     __asm__("sti;"); // enable interrupts
     
     vga_print("[+] All Initialised\n");
 
-    #include "fs/ext2fs.h"
-    if (!MIRROR_SUCCESS(ext2fs_init()))
-        vga_warn("no");
+    /*
+        vfs_mount(ext2fs_init(), "/"); // mount root drive
+    */
 
     while (1);
 }
