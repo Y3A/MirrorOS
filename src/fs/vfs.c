@@ -136,6 +136,11 @@ out:
 
 MIRRORSTATUS vfs_tree_populate(PVFS_NODE node)
 {
+    /*
+     * requests a list of vfs_nodes of files 
+     * under the given node from the underlying filesystem
+     * if any of these nodes are a directory, repeat as above
+     */
     return STATUS_SUCCESS;
 }
 

@@ -165,5 +165,6 @@ VOID ext2fs_make_vfs_node(PVFS_NODE ext2fs_node, PEXT2FS ext2fs, PEXT2FS_INODE i
 
 VOID ext2fs_open(PVOID internal, DWORD flags);
 VOID ext2fs_close(PVOID internal);
+VOID ext2fs_expand(PVOID internal, PVFS_NODE out_nodes, PDWORD out_nodes_count);
 
 #endif

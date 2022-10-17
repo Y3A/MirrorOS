@@ -160,3 +160,8 @@ VOID ext2fs_close(PVOID internal)
 {
     return;
 }
+
+VOID ext2fs_expand(PVOID internal, PVFS_NODE out_nodes, PDWORD out_nodes_count)
+{
+    return;
+}

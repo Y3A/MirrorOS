@@ -19,6 +19,8 @@
 
 typedef VOID (*_OPEN)(PVOID internal, DWORD flags);
 typedef VOID (*_CLOSE)(PVOID internal);
+/* return all files under a given node as their own vfs_node */
+typedef VOID (*_EXPAND)(PVOID internal, PVFS_NODE out_nodes, PDWORD out_nodes_count);
 
 typedef struct _VFS_NODE
 {
@@ -37,6 +39,7 @@ typedef struct _VFS_NODE
 
     _OPEN open;
     _CLOSE close;
+    _EXPAND expand;
 
     PVOID internal;
 } VFS_NODE, *PVFS_NODE;
