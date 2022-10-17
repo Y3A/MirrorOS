@@ -53,7 +53,27 @@ out:
     return status;
 }
 
-MIRRORSTATUS vfs_mount(PVFS_NODE node, PCSTR path)
+MIRRORSTATUS vfs_mount(PVFS_NODE root_node, PCSTR path)
+{
+    MIRRORSTATUS status;
+
+    root_node->type |= VFS_MOUNTPOINT;
+
+    status = vfs_tree_add(root_node, path);
+    if (!MIRROR_SUCCESS(status))
+        goto out;
+
+    status = vfs_tree_populate(root_node);
+    if (!MIRROR_SUCCESS(status)) {
+        vfs_tree_remove(path);
+        goto out;
+    }
+
+out:
+    return status;
+}
+
+MIRRORSTATUS vfs_tree_add(PVFS_NODE node, PCSTR path)
 {
     MIRRORSTATUS status = STATUS_SUCCESS;
     PSTR         cpy;
@@ -73,8 +93,8 @@ MIRRORSTATUS vfs_mount(PVFS_NODE node, PCSTR path)
     }
 
     /*
-     * scan backwards to find mount point
-     * for example, mounting /mnt/x/ will become /mnt/x, /mnt/ ... until /
+     * scan backwards to find file
+     * for example, searching /mnt/x/ will become /mnt/x, /mnt/ ... until /
      */
     for (unbound_strcpy(cpy, path); *cpy; cpy[unbound_strlen(cpy) - 1] = 0)
         if ((cur = vfs_lookup_node(cpy))) {
@@ -112,4 +132,14 @@ out:
     }
 
     return status;
+}
+
+MIRRORSTATUS vfs_tree_populate(PVFS_NODE node)
+{
+    return STATUS_SUCCESS;
+}
+
+VOID vfs_tree_remove(PCSTR path)
+{
+    return;
 }

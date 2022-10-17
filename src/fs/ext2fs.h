@@ -2,6 +2,35 @@
 #define EXT2FS_H
 
 #include "types.h"
+#include "drivers/ata.h"
+#include "fs/vfs.h"
+
+#define FILESYSTEM_DRIVE SLAVE_DRIVE
+
+#define EXT2FS_ROOT_DIRECTORY_INODE 2
+
+// -- file format --
+#define EXT2_S_IFSOCK       0xC000 // socket
+#define EXT2_S_IFLNK        0xA000 // symbolic link
+#define EXT2_S_IFREG        0x8000 // regular file
+#define EXT2_S_IFBLK        0x6000 // block device
+#define EXT2_S_IFDIR        0x4000 // directory
+#define EXT2_S_IFCHR        0x2000 // character device
+#define EXT2_S_IFIFO        0x1000 // fifo
+// -- process execution user/group override --
+#define EXT2_S_ISUID        0x0800 // Set process User ID
+#define EXT2_S_ISGID        0x0400 // Set process Group ID
+#define EXT2_S_ISVTX        0x0200 // sticky bit
+// -- access rights --
+#define EXT2_S_IRUSR        0x0100 // user read
+#define EXT2_S_IWUSR        0x0080 // user write
+#define EXT2_S_IXUSR        0x0040 // user execute
+#define EXT2_S_IRGRP        0x0020 // group read
+#define EXT2_S_IWGRP        0x0010 // group write
+#define EXT2_S_IXGRP        0x0008 // group execute
+#define EXT2_S_IROTH        0x0004 // others read
+#define EXT2_S_IWOTH        0x0002 // others write
+#define EXT2_S_IXOTH        0x0001 // others execute
 
 typedef struct _EXT2FS_SUPERBLOCK
 {
@@ -88,16 +117,39 @@ typedef struct _EXT2FS_BGD
     BYTE bg_reserved[12];
 } __attribute__((__packed__)) EXT2FS_BGD, *PEXT2FS_BGD;
 
+typedef struct _EXT2FS_INODE
+{
+    WORD i_mode;
+    WORD i_uid;
+    ULONG i_size;
+    ULONG i_atime;
+    ULONG i_ctime;
+    ULONG i_mtime;
+    ULONG i_dtime;
+    WORD i_gid;
+    WORD i_links_count;
+    ULONG i_blocks;
+    ULONG i_flags;
+    ULONG i_osd1;
+    ULONG i_block[15];
+    ULONG i_generation;
+    ULONG i_file_acl;
+    ULONG i_dir_acl;
+    ULONG i_faddr;
+    BYTE i_osd2[12];
+} __attribute__((__packed__)) EXT2FS_INODE, *PEXT2FS_INODE;
+
 typedef struct _EXT2FS
 {
-    PEXT2FS_SUPERBLOCK sb;
+    EXT2FS_SUPERBLOCK sb;
+    PEXT2FS_BGD bgd;
     ULONG block_sz;
     ULONG total_inodes;
     ULONG total_blocks;
     ULONG block_groups;
     ULONG blocks_per_block_group;
     ULONG inodes_per_block_group;
-} EXT2FS, *PEXT2FS;
+} __attribute__((__packed__)) EXT2FS, *PEXT2FS;
 
 // just to please the compiler
 typedef EXT2FS EXT2FS;
@@ -106,6 +158,12 @@ typedef PEXT2FS PEXT2FS;
 typedef EXT2FS_BGD EXT2FS_BGD;
 typedef PEXT2FS_BGD PEXT2FS_BGD;
 
-MIRRORSTATUS ext2fs_init(VOID);
+MIRRORSTATUS ext2fs_init(PVFS_NODE ext2fs_node);
+MIRRORSTATUS ext2fs_read_inode_metadata(PEXT2FS ext2fs, PEXT2FS_INODE inode_buf, ULONG inode_idx);
+MIRRORSTATUS ext2fs_write_inode_metadata(PEXT2FS ext2fs, PEXT2FS_INODE inode_buf, ULONG inode_idx);
+VOID ext2fs_make_vfs_node(PVFS_NODE ext2fs_node, PEXT2FS ext2fs, PEXT2FS_INODE inode, DWORD inode_idx);
+
+VOID ext2fs_open(PVOID internal, DWORD flags);
+VOID ext2fs_close(PVOID internal);
 
 #endif
