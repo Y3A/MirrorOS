@@ -33,6 +33,16 @@
 #define EXT2_S_IWOTH        0x0002 // others write
 #define EXT2_S_IXOTH        0x0001 // others execute
 
+// file format dir entry
+#define EXT2_FT_UNKNOWN 0
+#define EXT2_FT_REG_FILE 1
+#define EXT2_FT_DIR 2
+#define EXT2_FT_CHRDEV 3
+#define EXT2_FT_BLKDEV 4
+#define EXT2_FT_FIFO 5
+#define EXT2_FT_SOCK 6
+#define EXT2_FT_SYMLINK 7
+
 typedef struct _EXT2FS_SUPERBLOCK
 {
     /* https://www.nongnu.org/ext2-doc/ext2.html#superblock */
@@ -154,6 +164,15 @@ typedef struct _EXT2FS
     PEXT2FS_INODE root;
 } __attribute__((__packed__)) EXT2FS, *PEXT2FS;
 
+typedef struct
+{
+    DWORD inode;
+    WORD rec_len;
+    BYTE name_len;
+    BYTE file_type;
+    CHAR name[1];
+} __attribute__((__packed__)) EXT2FS_DIR_ENTRY, *PEXT2FS_DIR_ENTRY;
+
 // just to please the compiler
 typedef EXT2FS EXT2FS;
 typedef EXT2FS_SUPERBLOCK EXT2FS_SUPERBLOCK;
@@ -174,7 +193,13 @@ MIRRORSTATUS ext2fs_read_inode_filedata(PEXT2FS ext2fs, IN PEXT2FS_INODE inode_b
 // Given populated inode_buf, write file data to that inode
 MIRRORSTATUS ext2fs_write_inode_filedata(PEXT2FS ext2fs, IN PEXT2FS_INODE inode_buf, IN ULONG offset, IN ULONG size, IN PBYTE buf);
 
-VOID ext2fs_open(PVOID internal, DWORD flags);
+// Given path, get inode index of last part
+DWORD ext2fs_get_inode_idx(PEXT2FS ext2fs, PPATH path);
+
+// Operations
+MIRRORSTATUS ext2fs_open(PVOID internal, PPATH path, DWORD flags);
 VOID ext2fs_close(PVOID internal);
+MIRRORSTATUS ext2fs_read(PVOID internal, PPATH path, PBYTE buf, DWORD offset, DWORD size);
+VFS_TYPE ext2fs_gettype(PVOID internal, PPATH path);
 
 #endif

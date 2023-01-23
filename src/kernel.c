@@ -65,5 +65,12 @@ VOID kernel_main(VOID)
     
     vga_print("[+] All Initialised\n");
 
+    /* tests
+    CHAR buf[100];
+    if (!MIRROR_SUCCESS(vfs_read("/test2.txt", (PBYTE)buf, 0, sizeof(buf))))
+        vga_warn("Error");
+    else
+        vga_print((PCSTR)buf);
+    */
     while (1);
 }

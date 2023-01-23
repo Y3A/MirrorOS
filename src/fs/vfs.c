@@ -13,6 +13,24 @@ out:
     return status;
 }
 
+PVFS_NODE vfs_exists(PVFS_NODE node, PSTR filepath)
+{
+    PVFS_NODE ret = NULL;
+    if (!node)
+        return NULL;
+
+    if (unbound_strlen(node->path) == unbound_strlen(filepath) && unbound_strcmp(node->path, filepath) == 0)
+        return node;
+
+    ret = vfs_exists(node->nextsibling, filepath);
+    if (ret)
+        return ret;
+
+    ret = vfs_exists(node->firstchild, filepath);
+
+    return ret;
+}
+
 MIRRORSTATUS vfs_mount(PVOID filesystem, PCSTR mnt_point)
 {
     MIRRORSTATUS status = STATUS_SUCCESS;
@@ -41,5 +59,39 @@ MIRRORSTATUS vfs_mount(PVOID filesystem, PCSTR mnt_point)
     }
 
 out:
+    return status;
+}
+
+MIRRORSTATUS vfs_read(PSTR filepath, PBYTE buf, DWORD offset, DWORD size)
+{
+    MIRRORSTATUS status = STATUS_SUCCESS;
+    PSTR         cpy, cur;
+    PVFS_NODE    node;
+    PPATH        path;
+
+    if (!buf || !filepath || *filepath == '\0') {
+        status = STATUS_EINVAL;
+        goto out;
+    }
+
+    for (cpy = kzalloc(unbound_strlen(filepath) + 1), unbound_strcpy(cpy, filepath); *cpy; cpy[unbound_strlen(cpy) - 1] = 0) {
+        if ((node = vfs_exists(vfs_root_node, cpy))) {
+            cur = cpy;
+            while (*filepath++ == *cur++);
+            path = create_path(filepath-2);
+            if (node->ops->gettype(node->ops, path) != VFS_TYPE_REG_FILE) {
+                status = STATUS_EINVAL;
+                goto out;
+            }
+            status = node->ops->read(node->ops, path, buf, offset, size);
+            goto out;
+        }
+    }
+
+out:
+    if (cpy)
+        kfree(cpy);
+    if (path)
+        delete_path(path);
     return status;
 }

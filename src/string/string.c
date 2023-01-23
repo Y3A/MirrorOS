@@ -10,7 +10,7 @@ ULONG unbound_strlen(PCSTR str)
 {
     ULONG ptr = 0;
     while (str[ptr++]) ;
-    return ptr;
+    return ptr-1;
 }
 
 ULONG unbound_strnlen(PCSTR str, ULONG max)

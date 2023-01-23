@@ -2,7 +2,9 @@
 #include "types.h"
 #include "drivers/ata.h"
 #include "fs/ext2fs.h"
+#include "fs/path.h"
 #include "fs/vfs.h"
+#include "string/string.h"
 #include "memory/heap/kheap.h"
 
 DWORD pow(DWORD n1, DWORD n2)
@@ -188,6 +190,8 @@ PVOID ext2fs_init(DWORD drive_offset)
     // Operations
     ext2fs->ops.open = ext2fs_open;
     ext2fs->ops.close = ext2fs_close;
+    ext2fs->ops.read = ext2fs_read;
+    ext2fs->ops.gettype = ext2fs_gettype;
 
 out:
     if (!MIRROR_SUCCESS(status))
@@ -207,12 +211,113 @@ out:
     return ext2fs;
 }
 
-VOID ext2fs_open(PVOID internal, DWORD flags)
+MIRRORSTATUS ext2fs_open(PVOID internal, PPATH path, DWORD flags)
 {
-    return;
+    return STATUS_SUCCESS;
 }
 
 VOID ext2fs_close(PVOID internal)
 {
     return;
+}
+
+MIRRORSTATUS ext2fs_read(PVOID internal, PPATH path, PBYTE buf, DWORD offset, DWORD size)
+{
+    MIRRORSTATUS  status = STATUS_SUCCESS;
+    PEXT2FS       ext2fs = (PEXT2FS)internal;
+    DWORD         idx;
+    PEXT2FS_INODE cur_inode = NULL;
+
+    idx = ext2fs_get_inode_idx(ext2fs, path);
+    if (!idx) {
+        status = STATUS_EINVAL;
+        goto out;
+    }
+    cur_inode = kzalloc(sizeof(EXT2FS_INODE));
+    if (!MIRROR_SUCCESS(status = ext2fs_read_inode_metadata(ext2fs, cur_inode, idx)))
+        goto out;
+    status = ext2fs_read_inode_filedata(ext2fs, cur_inode, offset, size, (PBYTE)buf);
+
+out:
+    if (cur_inode)
+        kfree(cur_inode);
+    return status;
+}
+
+VFS_TYPE ext2fs_gettype(PVOID internal, PPATH path)
+{
+    VFS_TYPE      ret = VFS_TYPE_BAD;
+    PEXT2FS_INODE cur_inode = NULL;
+    PEXT2FS       ext2fs = (PEXT2FS)internal;
+    DWORD         idx = ext2fs_get_inode_idx(ext2fs, path);
+
+    if (!idx)
+        goto out;
+
+    cur_inode = kzalloc(sizeof(EXT2FS_INODE));
+    if (!MIRROR_SUCCESS(ext2fs_read_inode_metadata(ext2fs, cur_inode, idx)))
+        goto out;
+
+    if (cur_inode->i_mode & EXT2_S_IFREG)
+        ret = VFS_TYPE_REG_FILE;
+    else if (cur_inode->i_mode & EXT2_S_IFDIR)
+        ret =VFS_TYPE_DIR;
+
+out:
+    if (cur_inode)
+        kfree(cur_inode);
+    return ret;
+}
+
+DWORD ext2fs_get_inode_idx(PEXT2FS ext2fs, PPATH path)
+{
+    DWORD               idx = 0;
+    PSTR                name;
+    PEXT2FS_INODE       cur_inode = kzalloc(sizeof(EXT2FS_INODE));
+    PEXT2FS_DIR_ENTRY   buf = NULL, cpy = NULL;
+    BYTE                found = 1;
+
+    if (!MIRROR_SUCCESS(ext2fs_read_inode_metadata(ext2fs, cur_inode, EXT2FS_ROOT_DIRECTORY_INODE)))
+        goto out;
+
+    while (found && (name = get_pathname(path))) {
+        found = 0;
+        if (buf) {
+            kfree(buf);
+            buf = NULL;
+        }
+        buf = kzalloc(cur_inode->i_size);
+        cpy = buf;
+        if (!MIRROR_SUCCESS(ext2fs_read_inode_filedata(ext2fs, cur_inode, 0, cur_inode->i_size, (PBYTE)buf)))
+            goto out;
+
+        while (cpy->inode) {
+            if (unbound_strcmp(name, (PCSTR)cpy->name) == 0) {
+                if (cpy->file_type == EXT2_FT_DIR) {
+                    found = 1;
+                    // found our next dir to go to
+                    if (!MIRROR_SUCCESS(ext2fs_read_inode_metadata(ext2fs, cur_inode, cpy->inode)))
+                        goto out;
+                    path = get_nextpath(path);
+                    break;
+                }
+                else if (cpy->file_type == EXT2_FT_REG_FILE) {
+                    if (get_nextpath(path) == NULL) {
+                        // found our desired file!
+                        idx = cpy->inode;
+                        goto out;
+                    }
+                }
+            }
+            cpy = (PEXT2FS_DIR_ENTRY)((DWORD)cpy + (DWORD)(cpy->rec_len));
+        }
+        
+    }
+
+out:
+    if (cur_inode)
+        kfree(cur_inode);
+    if (buf)
+        kfree(buf);
+    return idx;
 }

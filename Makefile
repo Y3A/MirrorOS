@@ -1,5 +1,5 @@
 BINS = ./bin/boot.bin ./bin/kernel.bin
-LINKS = ./build/kernel.asm.o ./build/kernel.o ./build/idt/idt.o ./build/memory/memory.o ./build/io/io.asm.o ./build/interrupts.asm.o ./build/memory/heap/heap.o ./build/memory/heap/kheap.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/string/string.o ./build/drivers/vga.o ./build/drivers/ata.o ./build/fs/ext2fs.o ./build/fs/vfs.o
+LINKS = ./build/kernel.asm.o ./build/kernel.o ./build/idt/idt.o ./build/memory/memory.o ./build/io/io.asm.o ./build/interrupts.asm.o ./build/memory/heap/heap.o ./build/memory/heap/kheap.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/string/string.o ./build/drivers/vga.o ./build/drivers/ata.o ./build/fs/ext2fs.o ./build/fs/vfs.o ./build/fs/path.o
 INCLUDES = -I./src
 FLAGS = -g -ffreestanding -falign-jumps -falign-functions -falign-labels -falign-loops -fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function -fno-builtin -Werror -Wno-unused-label -Wno-cpp -Wno-unused-parameter -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
 
@@ -59,6 +59,9 @@ all: $(BINS)
 
 ./build/fs/vfs.o: ./src/fs/vfs.c
 	i686-elf-gcc $(INCLUDES) $(FLAGS) ./src/fs/vfs.c -c -o ./build/fs/vfs.o
+
+./build/fs/path.o: ./src/fs/path.c
+	i686-elf-gcc $(INCLUDES) $(FLAGS) ./src/fs/path.c -c -o ./build/fs/path.o
 
 clean:
 	rm -rf $(BINS) ./bin/os.bin
