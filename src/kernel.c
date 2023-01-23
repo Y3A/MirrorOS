@@ -19,6 +19,7 @@ VOID kernel_main(VOID)
 {
     MIRRORSTATUS        status = STATUS_SUCCESS;
     PPAGE_CHUNK         kernel_pagechunk = NULL;
+    PVOID               main_fs;
 
     // initialise vga driver
     vga_init();
@@ -43,6 +44,22 @@ VOID kernel_main(VOID)
 
     // enable paging
     paging_enable_paging();
+
+    // initialize filesystem
+    status = vfs_init();
+    if (!MIRROR_SUCCESS(status))
+        kernel_panic("[-] VFS Initialization Failed\n");
+        
+    main_fs = ext2fs_init(DRIVE_HEAD);
+    if (!main_fs) {
+        vga_warn("[-] EXT2 FileSystem Initialization Failed\n");
+        vga_warn("[-] No FileSystem In Use\n");
+    }
+    else {
+        status = vfs_mount(main_fs, VFS_ROOT);
+        if (!MIRROR_SUCCESS(status))
+            kernel_panic("[-] VFS Mount Root Failed\n");
+    }
 
     __asm__("sti;"); // enable interrupts
     

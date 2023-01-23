@@ -63,3 +63,29 @@ VOID vga_write(PCSTR str, BYTE colour)
     for (DWORD i = 0; i < len; i++)
         vga_checkputchar(str[i], colour);
 }
+
+VOID vga_printf(PCSTR format, ...)
+{
+    __builtin_va_list lst;
+    __builtin_va_start(lst, format);
+
+    while (*format) {
+        if (*format != '%')
+            vga_checkputchar(*format, COL_WHITE);
+        else {
+            format++;
+            if (*format == '\0')
+                break;
+
+            switch (*format) {
+            case 's':
+                vga_print(__builtin_va_arg(lst, PSTR));
+                break;
+            case 'c':
+                vga_checkputchar(__builtin_va_arg(lst, INT), COL_WHITE);
+                break;
+            }
+        }
+        format++;
+    }
+}

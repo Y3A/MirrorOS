@@ -13,6 +13,7 @@ WORD vga_makechar(BYTE c, BYTE colour);
 VOID vga_putchar(DWORD x, DWORD y, BYTE c, BYTE colour);
 VOID vga_checkputchar(BYTE c, BYTE colour);
 VOID vga_print(PCSTR str);
+VOID vga_printf(PCSTR format, ...);
 VOID vga_warn(PCSTR str);
 VOID vga_write(PCSTR str, BYTE colour);
 VOID vga_init(VOID);

@@ -5,7 +5,8 @@
 #include "drivers/ata.h"
 #include "fs/vfs.h"
 
-#define FILESYSTEM_DRIVE SLAVE_DRIVE
+#define IN
+#define OUT
 
 #define EXT2FS_ROOT_DIRECTORY_INODE 2
 
@@ -141,6 +142,7 @@ typedef struct _EXT2FS_INODE
 
 typedef struct _EXT2FS
 {
+    VFS_OPS ops;
     EXT2FS_SUPERBLOCK sb;
     PEXT2FS_BGD bgd;
     ULONG block_sz;
@@ -149,6 +151,7 @@ typedef struct _EXT2FS
     ULONG block_groups;
     ULONG blocks_per_block_group;
     ULONG inodes_per_block_group;
+    PEXT2FS_INODE root;
 } __attribute__((__packed__)) EXT2FS, *PEXT2FS;
 
 // just to please the compiler
@@ -158,8 +161,18 @@ typedef PEXT2FS PEXT2FS;
 typedef EXT2FS_BGD EXT2FS_BGD;
 typedef PEXT2FS_BGD PEXT2FS_BGD;
 
-MIRRORSTATUS ext2fs_read_inode_metadata(PEXT2FS ext2fs, PEXT2FS_INODE inode_buf, ULONG inode_idx);
-MIRRORSTATUS ext2fs_write_inode_metadata(PEXT2FS ext2fs, PEXT2FS_INODE inode_buf, ULONG inode_idx);
+PVOID ext2fs_init(DWORD drive_offset);
+
+// Populate empty inode_buf with inode metadata
+MIRRORSTATUS ext2fs_read_inode_metadata(PEXT2FS ext2fs, OUT PEXT2FS_INODE inode_buf, IN ULONG inode_idx);
+// Write populated inode_buf to disk
+MIRRORSTATUS ext2fs_write_inode_metadata(PEXT2FS ext2fs, IN PEXT2FS_INODE inode_buf, IN ULONG inode_idx);
+
+// Given populated inode_buf, read file data referenced by that inode
+MIRRORSTATUS ext2fs_read_inode_filedata(PEXT2FS ext2fs, IN PEXT2FS_INODE inode_buf, IN ULONG offset, IN ULONG size, OUT PBYTE buf);
+
+// Given populated inode_buf, write file data to that inode
+MIRRORSTATUS ext2fs_write_inode_filedata(PEXT2FS ext2fs, IN PEXT2FS_INODE inode_buf, IN ULONG offset, IN ULONG size, IN PBYTE buf);
 
 VOID ext2fs_open(PVOID internal, DWORD flags);
 VOID ext2fs_close(PVOID internal);

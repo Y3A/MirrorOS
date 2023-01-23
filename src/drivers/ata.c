@@ -238,3 +238,13 @@ VOID ata_write_sectors(PVOID buf, BYTE sectors, DWORD lba, DRIVE_TYPE type)
 
     return;
 }
+
+MIRRORSTATUS ata_read_filesystem(PVOID buf, ULONG size, ULONG offset)
+{
+    return ata_read(buf, size, offset, SLAVE_DRIVE);
+}
+
+MIRRORSTATUS ata_write_filesystem(PVOID buf, ULONG size, ULONG offset)
+{
+    return ata_write(buf, size, offset, SLAVE_DRIVE);
+}

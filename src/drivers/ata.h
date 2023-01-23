@@ -24,6 +24,8 @@ typedef BYTE DRIVE_TYPE;
 #define ATA_WRITE ((BYTE)(0x30))
 #define ATA_IDENTIFY ((BYTE)(0xec))
 
+#define DRIVE_HEAD 0
+
 VOID ata_init(VOID);
 VOID ata_reset(VOID);
 MIRRORSTATUS ata_identify_master(VOID);
@@ -32,5 +34,7 @@ MIRRORSTATUS ata_read(PVOID buf, ULONG size, ULONG offset, DRIVE_TYPE type);
 VOID ata_read_sectors(PVOID buf, BYTE sectors, DWORD lba, DRIVE_TYPE type);
 MIRRORSTATUS ata_write(PVOID buf, ULONG size, ULONG offset, DRIVE_TYPE type);
 VOID ata_write_sectors(PVOID buf, BYTE sectors, DWORD lba, DRIVE_TYPE type);
+MIRRORSTATUS ata_read_filesystem(PVOID buf, ULONG size, ULONG offset);
+MIRRORSTATUS ata_write_filesystem(PVOID buf, ULONG size, ULONG offset);
 
 #endif
