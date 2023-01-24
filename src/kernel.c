@@ -1,3 +1,4 @@
+#include "config.h"
 #include "kernel.h"
 #include "status.h"
 #include "types.h"
@@ -5,6 +6,7 @@
 #include "drivers/ata.h"
 #include "fs/ext2fs.h"
 #include "fs/vfs.h"
+#include "gdt/gdt.h"
 #include "idt/idt.h"
 #include "memory/paging/paging.h"
 #include "memory/heap/kheap.h"
@@ -15,11 +17,23 @@ VOID kernel_panic(PCSTR msg)
     while (1) ;
 }
 
+GDT_ENTRY gdt[TOTAL_GDT_SEGMENTS] = { 0 };
+GDT_READABLE gdt_readable[TOTAL_GDT_SEGMENTS] = {
+    { 0 }, // null segment
+    { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_FLAG_KERNEL_CODE },
+    { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_FLAG_KERNEL_DATA}
+};
+
+
 VOID kernel_main(VOID)
 {
     MIRRORSTATUS        status = STATUS_SUCCESS;
     PPAGE_CHUNK         kernel_pagechunk = NULL;
     PVOID               main_fs;
+
+    // initialise gdt
+    gdt_readable_to_gdt_entry((PGDT_ENTRY)&gdt, (PGDT_READABLE)&gdt_readable, TOTAL_GDT_SEGMENTS);
+    gdt_load((PGDT_ENTRY)&gdt, sizeof(gdt));
 
     // initialise vga driver
     vga_init();

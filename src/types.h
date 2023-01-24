@@ -8,6 +8,9 @@
 #define NULL ((PVOID)(0))
 #endif
 
+#define IN
+#define OUT
+
 typedef signed char CHAR;
 typedef CHAR *PCHAR;
 

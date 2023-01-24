@@ -10,4 +10,9 @@
 
 #define SECTOR_SZ 512
 
+#define TOTAL_GDT_SEGMENTS 3
+
+#define MEMORY_BASE 0
+#define MEMORY_LIMIT 0xffffffff
+
 #endif

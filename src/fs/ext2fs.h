@@ -5,9 +5,6 @@
 #include "drivers/ata.h"
 #include "fs/vfs.h"
 
-#define IN
-#define OUT
-
 #define EXT2FS_ROOT_DIRECTORY_INODE 2
 
 // -- file format --
