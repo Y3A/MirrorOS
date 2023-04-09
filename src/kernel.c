@@ -20,8 +20,8 @@ VOID kernel_panic(PCSTR msg)
 GDT_ENTRY gdt[TOTAL_GDT_SEGMENTS] = { 0 };
 GDT_READABLE gdt_readable[TOTAL_GDT_SEGMENTS] = {
     { 0 }, // null segment
-    { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_FLAG_KERNEL_CODE },
-    { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_FLAG_KERNEL_DATA}
+    { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_KERNEL_CODE },
+    { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_KERNEL_DATA}
 };
 
 

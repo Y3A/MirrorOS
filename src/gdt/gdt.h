@@ -33,8 +33,8 @@ typedef struct
     DWORD flags;
 } GDT_READABLE, *PGDT_READABLE;
 
-#define GDT_FLAG_KERNEL_CODE 0x9a
-#define GDT_FLAG_KERNEL_DATA 0x92
+#define GDT_KERNEL_CODE 0x9a
+#define GDT_KERNEL_DATA 0x92
 
 VOID gdt_load(IN PGDT_ENTRY gdt, IN DWORD size);
 VOID gdt_readable_to_gdt_entry(OUT PGDT_ENTRY gdt, IN PGDT_READABLE gdt_readable, IN DWORD count);

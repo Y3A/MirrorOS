@@ -64,7 +64,8 @@ out:
 
 MIRRORSTATUS vfs_read(PSTR filepath, PBYTE buf, DWORD offset, DWORD size)
 {
-    MIRRORSTATUS status = STATUS_SUCCESS;
+    // return no such device if vfs search fails
+    MIRRORSTATUS status = STATUS_ENODEV;
     PSTR         cpy, cur;
     PVFS_NODE    node;
     PPATH        path;
@@ -77,7 +78,10 @@ MIRRORSTATUS vfs_read(PSTR filepath, PBYTE buf, DWORD offset, DWORD size)
     for (cpy = kzalloc(unbound_strlen(filepath) + 1), unbound_strcpy(cpy, filepath); *cpy; cpy[unbound_strlen(cpy) - 1] = 0) {
         if ((node = vfs_exists(vfs_root_node, cpy))) {
             cur = cpy;
+            // for a path like /home/a.txt, advance to a.txt
             while (*filepath++ == *cur++);
+            // we wanna keep the /, and the previous line advances one too much
+            // so back by 2
             path = create_path(filepath-2);
             if (node->ops->gettype(node->ops, path) != VFS_TYPE_REG_FILE) {
                 status = STATUS_EINVAL;
