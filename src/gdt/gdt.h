@@ -21,7 +21,7 @@ typedef struct
     DWORD big : 1;  // 32-bit opcodes for code, uint32_t stack for data
     DWORD gran : 1; // 1 to use 4k page addressing, 0 for byte addressing
     DWORD base_high : 8;
-} __attribute__((__packed__)) GDT_ENTRY, *PGDT_ENTRY;
+} PACKED GDT_ENTRY, *PGDT_ENTRY;
 
 
 // a more humane gdt version, where we operate on
@@ -33,8 +33,12 @@ typedef struct
     DWORD flags;
 } GDT_READABLE, *PGDT_READABLE;
 
-#define GDT_KERNEL_CODE 0x9a
+// https://wiki.osdev.org/GDT_Tutorial#Flat_.2F_Long_Mode_Setup
+#define GDT_KERNEL_CODE 0x9A
 #define GDT_KERNEL_DATA 0x92
+#define GDT_USER_CODE   0xFA
+#define GDT_USER_DATA   0xF2
+#define GDT_TSS         0x89
 
 VOID gdt_load(IN PGDT_ENTRY gdt, IN DWORD size);
 VOID gdt_readable_to_gdt_entry(OUT PGDT_ENTRY gdt, IN PGDT_READABLE gdt_readable, IN DWORD count);

@@ -99,7 +99,7 @@ typedef struct _EXT2FS_SUPERBLOCK
     ULONG s_first_meta_bg;
     BYTE unused1[760];
 
-} __attribute__((__packed__)) EXT2FS_SUPERBLOCK, *PEXT2FS_SUPERBLOCK;
+} PACKED EXT2FS_SUPERBLOCK, *PEXT2FS_SUPERBLOCK;
 
 #define SUPERBLOCK_SZ (sizeof(EXT2FS_SUPERBLOCK))
 #define SUPERBLOCK_OFFSET 1024
@@ -123,7 +123,7 @@ typedef struct _EXT2FS_BGD
     WORD bg_used_dirs_count;
     WORD bg_pad;
     BYTE bg_reserved[12];
-} __attribute__((__packed__)) EXT2FS_BGD, *PEXT2FS_BGD;
+} PACKED EXT2FS_BGD, *PEXT2FS_BGD;
 
 typedef struct _EXT2FS_INODE
 {
@@ -145,7 +145,7 @@ typedef struct _EXT2FS_INODE
     ULONG i_dir_acl;
     ULONG i_faddr;
     BYTE i_osd2[12];
-} __attribute__((__packed__)) EXT2FS_INODE, *PEXT2FS_INODE;
+} PACKED EXT2FS_INODE, *PEXT2FS_INODE;
 
 typedef struct _EXT2FS
 {
@@ -159,7 +159,7 @@ typedef struct _EXT2FS
     ULONG blocks_per_block_group;
     ULONG inodes_per_block_group;
     PEXT2FS_INODE root;
-} __attribute__((__packed__)) EXT2FS, *PEXT2FS;
+} PACKED EXT2FS, *PEXT2FS;
 
 typedef struct
 {
@@ -168,7 +168,7 @@ typedef struct
     BYTE name_len;
     BYTE file_type;
     CHAR name[1];
-} __attribute__((__packed__)) EXT2FS_DIR_ENTRY, *PEXT2FS_DIR_ENTRY;
+} PACKED EXT2FS_DIR_ENTRY, *PEXT2FS_DIR_ENTRY;
 
 // just to please the compiler
 typedef EXT2FS EXT2FS;

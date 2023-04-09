@@ -14,14 +14,14 @@ struct _IDT_ENTRY
     BYTE zero;
     BYTE type_attr; // Type and Attributes (P, DPL, S)
     WORD offset_high; // Offset bits 16 to 31
-} __attribute__((packed));
+} PACKED;
 
 struct _IDT_DESC
 /* https://wiki.osdev.org/Interrupt_Descriptor_Table#IDTR */
 {
     WORD limit; // Size of IDT minus 1
     DWORD base; // Starting address of IDT
-} __attribute__((packed));
+} PACKED;
 
 typedef struct _IDT_ENTRY IDT_ENTRY, *PIDT_ENTRY;
 typedef struct _IDT_DESC IDT_DESC, *PIDT_DESC;

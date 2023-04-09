@@ -8,6 +8,7 @@
 #include "fs/vfs.h"
 #include "gdt/gdt.h"
 #include "idt/idt.h"
+#include "task/tss.h"
 #include "memory/paging/paging.h"
 #include "memory/heap/kheap.h"
 
@@ -17,11 +18,15 @@ VOID kernel_panic(PCSTR msg)
     while (1) ;
 }
 
+TSS tss = { 0 };
 GDT_ENTRY gdt[TOTAL_GDT_SEGMENTS] = { 0 };
 GDT_READABLE gdt_readable[TOTAL_GDT_SEGMENTS] = {
     { 0 }, // null segment
     { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_KERNEL_CODE },
-    { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_KERNEL_DATA}
+    { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_KERNEL_DATA},
+    { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_USER_CODE},
+    { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_USER_DATA},
+    { .base = (DWORD)&tss, .limit = sizeof(tss), .flags = GDT_TSS}
 };
 
 
@@ -48,6 +53,10 @@ VOID kernel_main(VOID)
 
     // initialise IDT
     idt_init();
+
+    // initialise and load TSS
+    tss_init_tss(&tss, KERNEL_STACK_LIMIT, GDT_KERNEL_DATA);
+    tss_load_tss(GDT_TSS_OFFSET);
     
     // setup paging
     status = paging_new_pagechunk(&kernel_pagechunk, PAGING_RDWR | PAGING_IS_PRESENT | PAGING_USER_ACCESS);

@@ -11,6 +11,8 @@
 #define IN
 #define OUT
 
+#define PACKED __attribute__((__packed__))
+
 typedef signed char CHAR;
 typedef CHAR *PCHAR;
 
