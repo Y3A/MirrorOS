@@ -13,18 +13,13 @@
 #define PAGING_PAGETABLES_PER_PAGEDIR 1024
 #define PAGING_PAGE_SZ 4096
 
-typedef struct
-{
-    PULONG pagedir;
-} PAGE_CHUNK, *PPAGE_CHUNK;
-
 // fetch pagetable and pagedir index given a virtual address
 MIRRORSTATUS paging_get_pagedir_pagetable_idx(PVOID vaddr, PULONG pagedir_idx, PULONG pagetable_idx);
 BOOL paging_is_aligned(PVOID addr);
 // populate a pagetable entry to map a virtual address to a physical address with flags
 MIRRORSTATUS paging_set_pagetable_entry(PULONG pagedir, PVOID vaddr, ULONG paddr_flags);
 
-MIRRORSTATUS paging_new_pagechunk(PPAGE_CHUNK *out_pagechunk, WORD flags);
+MIRRORSTATUS paging_new_pagedir(PULONG *out_pagedir, WORD flags);
 VOID paging_switch_pagedir(PULONG pagedir);
 VOID paging_load_pagedir(PULONG pagedir);
 

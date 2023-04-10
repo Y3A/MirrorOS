@@ -34,5 +34,6 @@
         "string.h": "c",
         "vga.h": "c",
         "types.h": "c"
-    }
+    },
+    "C_Cpp.intelliSenseEngineFallback": "Enabled"
 }

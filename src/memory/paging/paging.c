@@ -4,14 +4,13 @@
 #include "memory/memory.h"
 #include "memory/heap/kheap.h"
 
-MIRRORSTATUS paging_new_pagechunk(PPAGE_CHUNK *out_pagechunk, WORD flags)
-// a page chunk points to a filled page dir
+MIRRORSTATUS paging_new_pagedir(PULONG *out_pagedir, WORD flags)
 {
+    // outputs a filled page dir
     MIRRORSTATUS    status = STATUS_SUCCESS;
     PULONG          new_pagedir = NULL;
     ULONG           pagetable_offset = 0;
     PULONG          new_pagetable = NULL;
-    PPAGE_CHUNK     new_pagechunk = NULL;
 
     new_pagedir = page_alloc_zero();
     if (!new_pagedir) {
@@ -39,15 +38,7 @@ MIRRORSTATUS paging_new_pagechunk(PPAGE_CHUNK *out_pagechunk, WORD flags)
         new_pagedir[pagetable_idx] = (DWORD)new_pagetable | flags | PAGING_RDWR;
     }
 
-    // return pointer to the new pagechunk
-    new_pagechunk = (PPAGE_CHUNK)kzalloc(sizeof(PAGE_CHUNK));
-    if (!new_pagechunk) {
-        status = STATUS_ENOMEM;
-        goto out;
-    }
-
-    new_pagechunk->pagedir = new_pagedir;
-    *out_pagechunk = new_pagechunk;
+    *out_pagedir = new_pagedir;
 
 out:
     if (!MIRROR_SUCCESS(status)) {

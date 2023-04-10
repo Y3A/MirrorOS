@@ -33,7 +33,7 @@ GDT_READABLE gdt_readable[TOTAL_GDT_SEGMENTS] = {
 VOID kernel_main(VOID)
 {
     MIRRORSTATUS        status = STATUS_SUCCESS;
-    PPAGE_CHUNK         kernel_pagechunk = NULL;
+    PULONG              kernel_pagedir = NULL;
     PVOID               main_fs;
 
     // initialise gdt
@@ -59,11 +59,11 @@ VOID kernel_main(VOID)
     tss_load_tss(GDT_TSS_OFFSET);
     
     // setup paging
-    status = paging_new_pagechunk(&kernel_pagechunk, PAGING_RDWR | PAGING_IS_PRESENT | PAGING_USER_ACCESS);
+    status = paging_new_pagedir(&kernel_pagedir, PAGING_RDWR | PAGING_IS_PRESENT | PAGING_USER_ACCESS);
     if (!MIRROR_SUCCESS(status))
         kernel_panic("[-] Paging Initialization Failed\n");
         
-    paging_switch_pagedir(kernel_pagechunk->pagedir);
+    paging_switch_pagedir(kernel_pagedir);
 
     // enable paging
     paging_enable_paging();
@@ -88,12 +88,12 @@ VOID kernel_main(VOID)
     
     vga_print("[+] All Initialised\n");
 
-    /* tests
+    // tests
     CHAR buf[100];
     if (!MIRROR_SUCCESS(vfs_read("/test2.txt", (PBYTE)buf, 0, sizeof(buf))))
         vga_warn("Error");
     else
         vga_print((PCSTR)buf);
-    */
+    
     while (1);
 }
