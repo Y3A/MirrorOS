@@ -55,7 +55,7 @@ VOID kernel_main(VOID)
     idt_init();
 
     // initialise and load TSS
-    tss_init_tss(&tss, KERNEL_STACK_LIMIT, GDT_KERNEL_DATA);
+    tss_init_tss(&tss, KERNEL_STACK_BASE, GDT_KERNEL_DATA);
     tss_load_tss(GDT_TSS_OFFSET);
     
     // setup paging
@@ -88,12 +88,13 @@ VOID kernel_main(VOID)
     
     vga_print("[+] All Initialised\n");
 
-    // tests
+    /* tests
     CHAR buf[100];
     if (!MIRROR_SUCCESS(vfs_read("/test2.txt", (PBYTE)buf, 0, sizeof(buf))))
         vga_warn("Error");
     else
         vga_print((PCSTR)buf);
-    
+    */
+   
     while (1);
 }
