@@ -3,6 +3,8 @@
 
 #include "types.h"
 
+#define TOTAL_INTERRUPTS 256
+
 #define IDT_DIV_BY_ZERO 0x0
 #define IDT_KEY_PRESS   0x21
 

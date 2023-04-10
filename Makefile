@@ -1,7 +1,20 @@
-BINS = ./bin/boot.bin ./bin/kernel.bin
-LINKS = ./build/kernel.asm.o ./build/kernel.o ./build/idt/idt.o ./build/memory/memory.o ./build/io/io.asm.o ./build/interrupts.asm.o ./build/memory/heap/heap.o ./build/memory/heap/kheap.o ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o ./build/string/string.o ./build/drivers/vga.o ./build/drivers/ata.o ./build/fs/ext2fs.o ./build/fs/vfs.o ./build/fs/path.o ./build/gdt/gdt.o ./build/gdt/gdt.asm.o ./build/task/tss.o ./build/task/tss.asm.o
+BINS =     ./bin/boot.bin ./bin/kernel.bin
+
+LINKS =    ./build/kernel.asm.o ./build/kernel.o ./build/idt/idt.o
+LINKS +=   ./build/memory/memory.o ./build/io/io.asm.o ./build/interrupts.asm.o
+LINKS +=   ./build/memory/heap/heap.o ./build/memory/heap/kheap.o
+LINKS +=   ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o
+LINKS +=   ./build/string/string.o ./build/drivers/vga.o ./build/drivers/ata.o
+LINKS +=   ./build/fs/ext2fs.o ./build/fs/vfs.o ./build/fs/path.o ./build/gdt/gdt.o
+LINKS +=   ./build/gdt/gdt.asm.o ./build/task/tss.o ./build/task/tss.asm.o
+LINKS +=   ./build/task/process.o ./build/task/thread.o
+
 INCLUDES = -I./src
-FLAGS = -g -ffreestanding -falign-jumps -falign-functions -falign-labels -falign-loops -fstrength-reduce -fomit-frame-pointer -finline-functions -Wno-unused-function -fno-builtin -Werror -Wno-unused-label -Wno-cpp -Wno-unused-parameter -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
+
+FLAGS =    -g -ffreestanding -falign-jumps -falign-functions -falign-labels
+FLAGS +=   -falign-loops -fstrength-reduce -fomit-frame-pointer -finline-functions
+FLAGS +=   -Wno-unused-function -fno-builtin -Werror -Wno-unused-label -Wno-cpp
+FLAGS +=   -Wno-unused-parameter -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
 
 all: $(BINS)
 	dd if=./bin/boot.bin >> ./bin/os.bin
@@ -74,6 +87,12 @@ all: $(BINS)
 
 ./build/task/tss.asm.o: ./src/task/tss.asm
 	nasm -f elf -g ./src/task/tss.asm -o ./build/task/tss.asm.o
+
+./build/task/process.o: ./src/task/process.c
+	i686-elf-gcc $(INCLUDES) $(FLAGS) ./src/task/process.c -c -o ./build/task/process.o
+
+./build/task/thread.o: ./src/task/thread.c
+	i686-elf-gcc $(INCLUDES) $(FLAGS) ./src/task/thread.c -c -o ./build/task/thread.o
 
 clean:
 	rm -rf $(BINS) ./bin/os.bin

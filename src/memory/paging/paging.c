@@ -45,7 +45,7 @@ out:
         if (new_pagedir) {
             for (ULONG pagetable_idx = 0; pagetable_idx < PAGING_PAGETABLES_PER_PAGEDIR; pagetable_idx++)
                 if (new_pagedir[pagetable_idx])
-                    page_free((PVOID)(new_pagedir[pagetable_idx] & 0xfffff000));
+                    page_free((PVOID)unmask_addr(new_pagedir[pagetable_idx]));
 
         page_free((PVOID)new_pagedir);
         }
@@ -53,9 +53,37 @@ out:
     return status;
 }
 
-VOID paging_switch_pagedir(PULONG pagedir)
-// switch page directories
+VOID paging_delete_pagedir(PULONG pagedir)
 {
+    // free all pages(and physical memory) associated with a pagedir
+    PULONG cur_pagetable;
+    ULONG  cur_page, cur_pagetable_offset, cur_page_offset;
+
+    if (!pagedir)
+        return;
+
+    for (ULONG pagetable_idx = 0; pagetable_idx < PAGING_PAGETABLES_PER_PAGEDIR; pagetable_idx++) {
+        cur_pagetable = (PULONG)unmask_addr(pagedir[pagetable_idx]);
+        cur_pagetable_offset = pagetable_idx * PAGING_PAGES_PER_PAGETABLE * PAGE_SZ;
+        for (ULONG page_idx = 0; page_idx < PAGING_PAGES_PER_PAGETABLE; page_idx++) {
+            cur_page = cur_pagetable[page_idx];
+            cur_page_offset = cur_pagetable_offset + (page_idx * PAGE_SZ);
+            // free all physical memory associated with the page
+            // our poor implementation meant that we can free the same page twice
+            // so it's fine to just go with a dumb loop
+            if (unmask_addr(cur_page) != cur_page_offset && cur_page & PAGING_MAPPED)
+                page_free((PVOID)unmask_addr(cur_page));
+        }
+        page_free((PVOID)cur_pagetable);
+    }
+
+    page_free((PVOID)pagedir);
+    return;
+}
+
+VOID paging_switch_pagedir(PULONG pagedir)
+{
+    // switch page directories
     paging_load_pagedir(pagedir);
 }
 
@@ -99,9 +127,10 @@ MIRRORSTATUS paging_set_pagetable_entry(PULONG pagedir, PVOID vaddr, ULONG paddr
         goto out;
 
     ULONG pagedir_entry = pagedir[pagedir_idx];
-    ULONG pagetable = (ULONG)(pagedir_entry & 0xfffff000); // mask off flag bits
+    ULONG pagetable = (ULONG)unmask_addr(pagedir_entry); // mask off flag bits
 
-    ((PULONG)pagetable)[pagetable_idx] = paddr_flags;
+    // add on mapped flag so we can cleanup
+    ((PULONG)pagetable)[pagetable_idx] = paddr_flags | PAGING_MAPPED;
 
 out:
     return status;

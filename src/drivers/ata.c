@@ -1,4 +1,3 @@
-#include "config.h"
 #include "status.h"
 #include "types.h"
 #include "drivers/ata.h"

@@ -8,6 +8,8 @@
     * Slave drive will be our storage(filesystem)
 */
 
+#define SECTOR_SZ 512
+
 typedef BYTE DRIVE_TYPE;
 
 #define MASTER_DRIVE ((DRIVE_TYPE)(0xe0))

@@ -1,4 +1,3 @@
-#include "config.h"
 #include "kernel.h"
 #include "status.h"
 #include "types.h"
@@ -85,7 +84,7 @@ VOID kernel_main(VOID)
     }
 
     __asm__("sti;"); // enable interrupts
-    
+
     vga_print("[+] All Initialised\n");
 
     /* tests

@@ -1,4 +1,3 @@
-#include "config.h"
 #include "kernel.h"
 #include "types.h"
 #include "gdt/gdt.h"
