@@ -1,6 +1,7 @@
 #include "config.h"
 #include "kernel.h"
 #include "types.h"
+#include "gdt/gdt.h"
 #include "idt/idt.h"
 #include "memory/memory.h"
 
@@ -50,7 +51,7 @@ VOID idt_set(INT interrupt_number, PVOID isr_addr)
     // isr_addr for address of interrupt service routines
     PIDT_ENTRY entry = &idt[interrupt_number];
     entry->offset_low = (DWORD)isr_addr & 0x0000ffff;
-    entry->selector = GDT_CS;
+    entry->selector = GDT_KERNEL_CS;
     entry->zero = 0;
     entry->type_attr = 0b11101110;
     entry->offset_high = (DWORD)isr_addr >> 16;

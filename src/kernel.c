@@ -19,14 +19,14 @@ VOID kernel_panic(PCSTR msg)
 }
 
 TSS tss = { 0 };
-GDT_ENTRY gdt[TOTAL_GDT_SEGMENTS] = { 0 };
-GDT_READABLE gdt_readable[TOTAL_GDT_SEGMENTS] = {
+GDT_ENTRY gdt[GDT_TOTAL_SEGMENTS] = { 0 };
+GDT_READABLE gdt_readable[GDT_TOTAL_SEGMENTS] = {
     { 0 }, // null segment
-    { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_KERNEL_CODE },
-    { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_KERNEL_DATA},
-    { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_USER_CODE},
-    { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_USER_DATA},
-    { .base = (DWORD)&tss, .limit = sizeof(tss), .flags = GDT_TSS}
+    { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_FLAG_KERNEL_CODE },
+    { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_FLAG_KERNEL_DATA},
+    { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_FLAG_USER_CODE},
+    { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_FLAG_USER_DATA},
+    { .base = (DWORD)&tss, .limit = sizeof(tss), .flags = GDT_FLAG_TSS}
 };
 
 
@@ -37,7 +37,7 @@ VOID kernel_main(VOID)
     PVOID               main_fs;
 
     // initialise gdt
-    gdt_readable_to_gdt_entry((PGDT_ENTRY)&gdt, (PGDT_READABLE)&gdt_readable, TOTAL_GDT_SEGMENTS);
+    gdt_readable_to_gdt_entry((PGDT_ENTRY)&gdt, (PGDT_READABLE)&gdt_readable, GDT_TOTAL_SEGMENTS);
     gdt_load((PGDT_ENTRY)&gdt, sizeof(gdt));
 
     // initialise vga driver
@@ -95,6 +95,6 @@ VOID kernel_main(VOID)
     else
         vga_print((PCSTR)buf);
     */
-   
+
     while (1);
 }
