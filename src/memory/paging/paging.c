@@ -135,3 +135,14 @@ MIRRORSTATUS paging_set_pagetable_entry(PULONG pagedir, PVOID vaddr, ULONG paddr
 out:
     return status;
 }
+
+PVOID paging_align_address(PVOID ptr)
+{
+    DWORD delta;
+
+    if ((delta = (ULONG)ptr % PAGING_PAGE_SZ))
+        // upsize to page size
+        return (PVOID)((ULONG)ptr + PAGING_PAGE_SZ - delta);
+
+    return ptr;
+}

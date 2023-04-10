@@ -35,13 +35,18 @@ typedef struct _THREAD
     // here we follow the windows philosophy
     // where processes are containers and do nothing
     // threads are the actual runners
-    WORD        tid;
-    REGISTERS   regs;
-    STATE       state;
+    WORD                tid;
+    REGISTERS           regs;
+    STATE               state;
 
-    // singly linked list of all threads in the process
-    _THREAD     *next;
+    // circular doubly linked list of all threads in the process
+    struct _THREAD      *next;
+    struct _THREAD      *prev;
 
 } THREAD, *PTHREAD;
+
+PTHREAD thread_get_next_thread(PTHREAD thread);
+
+PTHREAD thread_shutdown_thread(PTHREAD thread);
 
 #endif
