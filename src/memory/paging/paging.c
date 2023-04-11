@@ -56,17 +56,22 @@ out:
 VOID paging_delete_pagedir(PULONG pagedir)
 {
     // free all pages(and physical memory) associated with a pagedir
-    PULONG cur_pagetable;
-    ULONG  cur_page, cur_pagetable_offset, cur_page_offset;
+    ULONG cur_pagetable, cur_page;
+    ULONG cur_pagetable_offset, cur_page_offset;
 
     if (!pagedir)
         return;
 
     for (ULONG pagetable_idx = 0; pagetable_idx < PAGING_PAGETABLES_PER_PAGEDIR; pagetable_idx++) {
-        cur_pagetable = (PULONG)unmask_addr(pagedir[pagetable_idx]);
+
+        cur_pagetable = pagedir[pagetable_idx];
+        if (!(cur_pagetable & PAGING_MAPPED))
+            continue;
+        // proceed only if current pagetable has mapped pages
+        cur_pagetable = unmask_addr(cur_pagetable);
         cur_pagetable_offset = pagetable_idx * PAGING_PAGES_PER_PAGETABLE * PAGE_SZ;
         for (ULONG page_idx = 0; page_idx < PAGING_PAGES_PER_PAGETABLE; page_idx++) {
-            cur_page = cur_pagetable[page_idx];
+            cur_page = ((PULONG)cur_pagetable)[page_idx];
             cur_page_offset = cur_pagetable_offset + (page_idx * PAGE_SZ);
             // free all physical memory associated with the page
             // our poor implementation meant that we can free the same page twice
@@ -131,6 +136,7 @@ MIRRORSTATUS paging_set_pagetable_entry(PULONG pagedir, PVOID vaddr, ULONG paddr
 
     // add on mapped flag so we can cleanup
     ((PULONG)pagetable)[pagetable_idx] = paddr_flags | PAGING_MAPPED;
+    pagedir[pagedir_idx] |= PAGING_MAPPED;
 
 out:
     return status;
