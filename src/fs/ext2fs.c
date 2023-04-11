@@ -276,11 +276,12 @@ DWORD ext2fs_get_inode_idx(PEXT2FS ext2fs, PPATH path)
     PEXT2FS_INODE       cur_inode = kzalloc(sizeof(EXT2FS_INODE));
     PEXT2FS_DIR_ENTRY   buf = NULL, cpy = NULL;
     BYTE                found = 1;
+    PPATH               path_cpy = path;
 
     if (!MIRROR_SUCCESS(ext2fs_read_inode_metadata(ext2fs, cur_inode, EXT2FS_ROOT_DIRECTORY_INODE)))
         goto out;
 
-    while (found && (name = get_pathname(path))) {
+    while (found && (name = get_pathname(path_cpy))) {
         found = 0;
         if (buf) {
             kfree(buf);
@@ -298,11 +299,11 @@ DWORD ext2fs_get_inode_idx(PEXT2FS ext2fs, PPATH path)
                     // found our next dir to go to
                     if (!MIRROR_SUCCESS(ext2fs_read_inode_metadata(ext2fs, cur_inode, cpy->inode)))
                         goto out;
-                    path = get_nextpath(path);
+                    path_cpy = get_nextpath(path_cpy);
                     break;
                 }
                 else if (cpy->file_type == EXT2_FT_REG_FILE) {
-                    if (get_nextpath(path) == NULL) {
+                    if (get_nextpath(path_cpy) == NULL) {
                         // found our desired file!
                         idx = cpy->inode;
                         goto out;

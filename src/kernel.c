@@ -88,11 +88,53 @@ VOID kernel_main(VOID)
     vga_print("[+] All Initialised\n");
 
     /* tests
+    char *xx = kzalloc(0x20);
+    char *yy = kzalloc(0x60);
+    char *zz = kzalloc(0x123);
+    char *aa = kzalloc(0x31);
+    kfree(zz);
+    kfree(yy);
+    
+    char *bb = kzalloc(0x30);
+    char *cc = kzalloc(0x30);
+    char *dd = kzalloc(0x31);
+    char *ee = kzalloc(0x200);
+    kfree(cc);
+    kfree(dd);
+    kfree(xx);
+    kfree(aa);
+    kfree(bb);
+    kfree(ee);
     CHAR buf[100];
-    if (!MIRROR_SUCCESS(vfs_read("/test2.txt", (PBYTE)buf, 0, sizeof(buf))))
-        vga_warn("Error");
+    FILE fd;
+    if (!MIRROR_SUCCESS(vfs_open("/test2.txt", &fd)))
+        vga_warn("Open error");
+    vga_print("safe\n");
+    if (!MIRROR_SUCCESS(vfs_read(fd, (PBYTE)buf, 0, sizeof(buf))))
+        vga_warn("Read error");
     else
         vga_print((PCSTR)buf);
+
+    unbound_memset(buf, 0, sizeof(buf));
+    if (!MIRROR_SUCCESS(vfs_open("/test2.txt", &fd)))
+        vga_warn("Open error");
+    if (!MIRROR_SUCCESS(vfs_open("/test2.txt", &fd)))
+        vga_warn("Open error");
+
+    if (!MIRROR_SUCCESS(vfs_read(fd, (PBYTE)buf, 0, sizeof(buf))))
+        vga_warn("Read error");
+
+    vga_print((PCSTR)buf);
+
+    vfs_close(fd);
+    vfs_close(fd);
+    vga_print("nn\n");
+    vfs_close(fd);
+    vga_print("yy\n");
+    if (!MIRROR_SUCCESS(vfs_open("/test2.txt", &fd)))
+        vga_warn("Open error");
+    if (!MIRROR_SUCCESS(vfs_open("/test2.txt", &fd)))
+        vga_warn("Open error");
     */
 
     while (1);

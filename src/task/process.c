@@ -1,5 +1,7 @@
 #include "process.h"
+#include "status.h"
 #include "thread.h"
+#include "fs/vfs.h"
 #include "memory/heap/kheap.h"
 #include "memory/paging/paging.h"
 
@@ -32,6 +34,14 @@ void process_set_current_thread(PPROCESS process, PTHREAD thread)
 {
     process->cur_thread = thread;
     return;
+}
+
+MIRRORSTATUS process_create_process(PCHAR filepath)
+{
+    MIRRORSTATUS status = STATUS_SUCCESS;
+
+out:
+    return status;
 }
 
 void process_delete_process(PPROCESS process)

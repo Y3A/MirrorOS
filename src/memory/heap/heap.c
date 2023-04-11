@@ -1,3 +1,4 @@
+#include "kernel.h"
 #include "status.h"
 #include "types.h"
 #include "memory/heap/heap.h"
@@ -143,6 +144,9 @@ PVOID heap_find_available(PVOID free_bin_head, ULONG chunk_size)
             chunk_set_size(cur + chunk_size, (chunksize_at_mem(\
                 cur + chunk_size) | PREV_INUSE));
 
+            // wipe prev_size of next
+            *(PULONG)(cur + chunk_size) = 0;
+
             return ret;
         }
 
@@ -256,7 +260,7 @@ VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
         new_top_sz = old_top_sz + chunk_sz_nomask;
         new_top = topchunk_addr - chunk_sz_nomask; // move top chunk backwards
 
-        if (top_bk == *(PVOID *)free_bin_head)
+        if (top_bk == topchunk_addr)
         // if only top chunk in free bin
         {
             *(PULONG)free_bin_head = (ULONG)new_top;
@@ -267,6 +271,8 @@ VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
         {
             chunk_set_fd(top_bk, new_top);
             chunk_set_bk(*(PVOID *)free_bin_head, new_top);
+            chunk_set_fd(new_top, *(PVOID *)free_bin_head);
+            chunk_set_bk(new_top, top_bk);
         }
 
         chunk_set_size(new_top, new_top_sz);
@@ -276,7 +282,7 @@ VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
         // if merged back and merge with top, unlink back chunk
         {
             cur = *(PVOID *)free_bin_head;
-            while (chunk_fd(cur) != free_bin_head)
+            while (chunk_fd(cur) != *(PVOID *)free_bin_head)
             {
                 if (cur == topchunk_addr) // topchunk_addr is now addr of merged chunk
                 {
@@ -303,7 +309,7 @@ VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
     next_next_chunk_addr = next_chunk_addr + \
         chunksize_nomask(chunksize_at_mem(next_chunk_addr));
     
-    if ( (ULONG)next_next_chunk_addr < (ULONG)topchunk_addr )
+    if ( (ULONG)next_next_chunk_addr <= (ULONG)topchunk_addr )
     {
         if ( !prev_inuse(chunksize_at_mem(next_next_chunk_addr)) )
         {
@@ -319,7 +325,7 @@ VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
             // needs unlinking
             {
                 cur = *(PVOID *)free_bin_head;
-                while (chunk_fd(cur) != free_bin_head)
+                while (chunk_fd(cur) != *(PVOID *)free_bin_head)
                 {
                     if (cur == new_next_chunk)
                     {
@@ -337,7 +343,7 @@ VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
             chunk_set_fd(next_chunk_bk, new_next_chunk);
             chunk_set_bk(next_chunk_fd, new_next_chunk);
             chunk_set_fd(new_next_chunk, next_chunk_fd);
-            chunk_set_bk(new_next_chunk, next_chunk_fd);
+            chunk_set_bk(new_next_chunk, next_chunk_bk);
 
             chunk_set_size(new_next_chunk, (new_next_chunk_sz | PREV_INUSE));
             
@@ -345,10 +351,14 @@ VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
             chunk_addr = new_next_chunk;
             chunk_sz_mask = chunksize_at_mem(new_next_chunk);
             chunk_sz_nomask = chunksize_nomask(chunk_sz_mask);
+
+            // update bin head if needed
+            if (*(PULONG)free_bin_head == (ULONG)next_chunk_addr)
+                *(PULONG)free_bin_head = (ULONG)chunk_addr;
         }
     }
     else
-        ; // corruption detected, maybe do something in the future
+        kernel_panic("[-] Heap Corruption Detected\n"); // corruption detected, panic
 
     // all checks done, check if need to link into bin head
     if (merged_back || merged_front)

@@ -33,6 +33,7 @@
         "fat16.h": "c",
         "string.h": "c",
         "vga.h": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "io.h": "c"
     }
 }

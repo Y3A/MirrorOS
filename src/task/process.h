@@ -34,6 +34,7 @@ PPROCESS process_get_next_process(void);
 PTHREAD process_get_current_thread(PPROCESS process);
 void process_set_current_thread(PPROCESS process, PTHREAD thread);
 
+MIRRORSTATUS process_create_process(PCHAR filepath);
 void process_delete_process(PPROCESS process);
 
 #endif

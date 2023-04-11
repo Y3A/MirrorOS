@@ -78,4 +78,7 @@ typedef void VOID;
 
 typedef INT MIRRORSTATUS;
 
+typedef PULONG FILE;
+typedef PULONG *PFILE;
+
 #endif
