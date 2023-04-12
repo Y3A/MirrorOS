@@ -192,6 +192,7 @@ PVOID ext2fs_init(DWORD drive_offset)
     ext2fs->ops.close = ext2fs_close;
     ext2fs->ops.read = ext2fs_read;
     ext2fs->ops.gettype = ext2fs_gettype;
+    ext2fs->ops.getsize = ext2fs_getsize;
 
 out:
     if (!MIRROR_SUCCESS(status))
@@ -321,4 +322,29 @@ out:
     if (buf)
         kfree(buf);
     return idx;
+}
+
+MIRRORSTATUS ext2fs_getsize(PVOID internal, PPATH path, PDWORD outsize)
+{
+    MIRRORSTATUS        status = STATUS_SUCCESS;
+    PEXT2FS             ext2fs = (PEXT2FS)internal;
+    DWORD               idx;
+    PEXT2FS_INODE       cur_inode = NULL;
+
+    idx = ext2fs_get_inode_idx(ext2fs, path);
+    if (!idx) {
+        status = STATUS_EINVAL;
+        goto out;
+    }
+
+    cur_inode = kzalloc(sizeof(EXT2FS_INODE));
+    if (!MIRROR_SUCCESS(status = ext2fs_read_inode_metadata(ext2fs, cur_inode, idx)))
+        goto out;
+    
+    *outsize = cur_inode->i_size;
+
+out:
+    if (cur_inode)
+        kfree(cur_inode);
+    return status;
 }

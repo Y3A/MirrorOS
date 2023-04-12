@@ -198,5 +198,6 @@ MIRRORSTATUS ext2fs_open(PVOID internal, PPATH path, DWORD flags);
 VOID ext2fs_close(PVOID internal);
 MIRRORSTATUS ext2fs_read(PVOID internal, PPATH path, PBYTE buf, DWORD offset, DWORD size);
 VFS_TYPE ext2fs_gettype(PVOID internal, PPATH path);
+MIRRORSTATUS ext2fs_getsize(PVOID internal, PPATH path, PDWORD outsize);
 
 #endif

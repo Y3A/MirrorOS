@@ -7,6 +7,7 @@
 #include "fs/vfs.h"
 #include "gdt/gdt.h"
 #include "idt/idt.h"
+#include "string/string.h"
 #include "task/tss.h"
 #include "memory/paging/paging.h"
 #include "memory/heap/kheap.h"
@@ -107,34 +108,20 @@ VOID kernel_main(VOID)
     kfree(ee);
     CHAR buf[100];
     FILE fd;
-    if (!MIRROR_SUCCESS(vfs_open("/test2.txt", &fd)))
+    if (!MIRROR_SUCCESS(vfs_open("/testdir1/testdir2/testb.txt", &fd)))
         vga_warn("Open error");
-    vga_print("safe\n");
     if (!MIRROR_SUCCESS(vfs_read(fd, (PBYTE)buf, 0, sizeof(buf))))
         vga_warn("Read error");
     else
         vga_print((PCSTR)buf);
 
-    unbound_memset(buf, 0, sizeof(buf));
-    if (!MIRROR_SUCCESS(vfs_open("/test2.txt", &fd)))
-        vga_warn("Open error");
-    if (!MIRROR_SUCCESS(vfs_open("/test2.txt", &fd)))
-        vga_warn("Open error");
-
-    if (!MIRROR_SUCCESS(vfs_read(fd, (PBYTE)buf, 0, sizeof(buf))))
-        vga_warn("Read error");
-
-    vga_print((PCSTR)buf);
+    ULONG len = unbound_strlen((PCSTR)buf);
+    DWORD len2;
+    vfs_getsize(fd, &len2);
+    if (len == len2)
+        vga_print("success!\n");
 
     vfs_close(fd);
-    vfs_close(fd);
-    vga_print("nn\n");
-    vfs_close(fd);
-    vga_print("yy\n");
-    if (!MIRROR_SUCCESS(vfs_open("/test2.txt", &fd)))
-        vga_warn("Open error");
-    if (!MIRROR_SUCCESS(vfs_open("/test2.txt", &fd)))
-        vga_warn("Open error");
     */
 
     while (1);

@@ -220,7 +220,12 @@ MIRRORSTATUS vfs_read(FILE fd, PBYTE buf, DWORD offset, DWORD size)
     PVFS_NODE    node = NULL;
     PPATH        path = NULL;
 
-    if (!buf || !file || !file->node || !file->path) {
+    if (!buf) {
+        status = STATUS_EINVAL;
+        goto out;
+    }
+
+    if (!file || !file->node || !file->path) {
         status = STATUS_EBADF;
         goto out;
     }
@@ -229,6 +234,33 @@ MIRRORSTATUS vfs_read(FILE fd, PBYTE buf, DWORD offset, DWORD size)
     path = file->path;
 
     status = node->ops->read(node->ops, path, buf, offset, size);
+
+out:
+    return status;
+}
+
+MIRRORSTATUS vfs_getsize(FILE fd, PDWORD outsize)
+{
+    MIRRORSTATUS    status;
+    PVFS_FILE       file = (PVFS_FILE)fd;
+    PVFS_NODE       node = NULL;
+    PPATH           path = NULL;
+
+    if (!outsize) {
+        status = STATUS_EINVAL;
+        goto out;
+    }
+
+    if (!file || !file->node || !file->path)
+    {
+        status = STATUS_EBADF;
+        goto out;
+    }
+
+    node = file->node;
+    path = file->path;
+
+    status = node->ops->getsize(node->ops, path, outsize);
 
 out:
     return status;
