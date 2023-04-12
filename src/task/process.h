@@ -8,7 +8,6 @@
 #define DEFAULT_PROCESS_ENTRY  0x400000
 #define DEFAULT_STACK_BASE     0x3ff000
 
-#include "thread.h"
 #include "types.h"
 
 typedef struct _PROCESS
@@ -17,13 +16,15 @@ typedef struct _PROCESS
     CHAR                process_name[MAX_PROCESS_NAME + 1];
     PULONG              page_dir;
     // circular doubly linked list of threads
-    PTHREAD             cur_thread;
+    struct _THREAD      *cur_thread;
 
     // circular doubly linked list of all processes on the system
     struct _PROCESS     *next;
     struct _PROCESS     *prev;
 
 } PROCESS, *PPROCESS;
+
+#include "thread.h"
 
 // cycle through processes for scheduling
 PPROCESS process_get_current_process(void);
@@ -34,7 +35,11 @@ PPROCESS process_get_next_process(void);
 PTHREAD process_get_current_thread(PPROCESS process);
 void process_set_current_thread(PPROCESS process, PTHREAD thread);
 
-MIRRORSTATUS process_create_process(PCHAR filepath);
+MIRRORSTATUS process_create_process(PSTR filepath, PPROCESS *out_process);
 void process_delete_process(PPROCESS process);
+
+// internal
+void process_link_process(PPROCESS process);
+DWORD process_allocate_pid(void);
 
 #endif

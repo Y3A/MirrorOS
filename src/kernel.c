@@ -8,6 +8,7 @@
 #include "gdt/gdt.h"
 #include "idt/idt.h"
 #include "string/string.h"
+#include "task/process.h"
 #include "task/tss.h"
 #include "memory/paging/paging.h"
 #include "memory/heap/kheap.h"
@@ -59,7 +60,7 @@ VOID kernel_main(VOID)
     tss_load_tss(GDT_TSS_OFFSET);
     
     // setup paging
-    status = paging_new_pagedir(&kernel_pagedir, PAGING_RDWR | PAGING_IS_PRESENT | PAGING_USER_ACCESS);
+    status = paging_new_pagedir(&kernel_pagedir, PAGING_IS_PRESENT);
     if (!MIRROR_SUCCESS(status))
         kernel_panic("[-] Paging Initialization Failed\n");
         
@@ -123,6 +124,11 @@ VOID kernel_main(VOID)
 
     vfs_close(fd);
     */
+
+    PPROCESS process;
+    status = process_create_process("/testdir1/testdir2/testb.txt", &process);
+    if (!MIRROR_SUCCESS(status))
+        vga_warn("ERROR");
 
     while (1);
 }

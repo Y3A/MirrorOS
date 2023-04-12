@@ -3,12 +3,20 @@
 
 #include "types.h"
 
+#define DEFAULT_STACK_BASE 0x3ff000
+
 typedef enum
 {
     THREAD_RUNNING,
-    THREAD_SLEEPING,
+    THREAD_SUSPENDED,
     THREAD_WAITING
 } STATE;
+
+typedef enum
+{
+    THREAD_START,
+    THREAD_SUSPEND
+} THREAD_CREATE_OPTIONS;
 
 typedef struct
 {
@@ -38,6 +46,7 @@ typedef struct _THREAD
     WORD                tid;
     REGISTERS           regs;
     STATE               state;
+    PPROCESS            parent_process;
 
     // circular doubly linked list of all threads in the process
     struct _THREAD      *next;
@@ -47,6 +56,8 @@ typedef struct _THREAD
 
 PTHREAD thread_get_next_thread(PTHREAD thread);
 
+PTHREAD thread_create_thread(PPROCESS parent_process, SUBROUTINE start, THREAD_CREATE_OPTIONS options);
+void    thread_start_thread(PTHREAD thread);
 PTHREAD thread_shutdown_thread(PTHREAD thread);
 
 #endif

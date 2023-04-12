@@ -81,4 +81,6 @@ typedef INT MIRRORSTATUS;
 typedef PULONG FILE;
 typedef PULONG *PFILE;
 
+typedef DWORD SUBROUTINE;
+
 #endif

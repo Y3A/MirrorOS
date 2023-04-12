@@ -4,6 +4,7 @@
 #include "path.h"
 
 #define VFS_ROOT "/"
+#define FILE_HEAD 0
 
 typedef DWORD VFS_TYPE;
 
