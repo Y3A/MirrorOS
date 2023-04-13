@@ -7,7 +7,8 @@ LINKS +=   ./build/memory/paging/paging.o ./build/memory/paging/paging.asm.o
 LINKS +=   ./build/string/string.o ./build/drivers/vga.o ./build/drivers/ata.o
 LINKS +=   ./build/fs/ext2fs.o ./build/fs/vfs.o ./build/fs/path.o ./build/gdt/gdt.o
 LINKS +=   ./build/gdt/gdt.asm.o ./build/task/tss.o ./build/task/tss.asm.o
-LINKS +=   ./build/task/process.o ./build/task/thread.o
+LINKS +=   ./build/task/process.o ./build/task/thread.o ./build/task/execute.asm.o
+LINKS +=   ./build/task/scheduler.o
 
 INCLUDES = -I./src
 
@@ -16,7 +17,7 @@ FLAGS +=   -falign-loops -fstrength-reduce -fomit-frame-pointer -finline-functio
 FLAGS +=   -Wno-unused-function -fno-builtin -Werror -Wno-unused-label -Wno-cpp
 FLAGS +=   -Wno-unused-parameter -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
 
-all: $(BINS)
+all: $(BINS) user_programs
 	dd if=./bin/boot.bin >> ./bin/os.bin
 	dd if=./bin/kernel.bin >> ./bin/os.bin # boot sector goes first, then the kernel which is loaded by the former.
 	dd if=/dev/zero bs=512 count=200 >> ./bin/os.bin # pad some bytes for the bootloader to load first, so we don't have to change when our kernel increases in size
@@ -94,6 +95,18 @@ all: $(BINS)
 ./build/task/thread.o: ./src/task/thread.c
 	i686-elf-gcc $(INCLUDES) $(FLAGS) ./src/task/thread.c -c -o ./build/task/thread.o
 
-clean:
+./build/task/execute.asm.o: ./src/task/execute.asm
+	nasm -f elf -g ./src/task/execute.asm -o ./build/task/execute.asm.o
+
+./build/task/scheduler.o: ./src/task/scheduler.c
+	i686-elf-gcc $(INCLUDES) $(FLAGS) ./src/task/scheduler.c -c -o ./build/task/scheduler.o
+
+user_programs:
+	cd ./src/userland && $(MAKE) all
+	
+user_program_clean:
+	cd ./src/userland && $(MAKE) clean
+
+clean: user_program_clean
 	rm -rf $(BINS) ./bin/os.bin
 	rm -rf $(LINKS) ./build/kernelfull.o

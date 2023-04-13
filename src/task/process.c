@@ -72,9 +72,10 @@ MIRRORSTATUS process_create_process(PSTR filepath, PPROCESS *out_process)
     // set attributes
     process->pid = process_allocate_pid();
     unbound_strcpy((PSTR)(process->process_name), filepath);
+    process->available_stack_addr = (ULONG)DEFAULT_STACK_BASE;
 
     // create new pagedir
-    status = paging_new_pagedir(&pagedir, PAGING_IS_PRESENT);
+    status = paging_new_pagedir(&pagedir, PAGING_PRESENT | PAGING_RDWR | PAGING_USER_ACCESS);
     if (!MIRROR_SUCCESS(status))
         goto out;
 
@@ -106,7 +107,7 @@ MIRRORSTATUS process_create_process(PSTR filepath, PPROCESS *out_process)
         // phys memory disconnected but virt memory contiguous
         // beauty of paging
         status = paging_set_pagetable_entry(pagedir, (PVOID)((ULONG)DEFAULT_PROCESS_ENTRY + i * PAGING_PAGE_SZ),\
-             (DWORD)data | PAGING_IS_PRESENT | PAGING_RDWR | PAGING_USER_ACCESS);
+             (DWORD)data | PAGING_PRESENT | PAGING_CODE | PAGING_USER_ACCESS);
         if (!MIRROR_SUCCESS(status))
             goto out;
     }

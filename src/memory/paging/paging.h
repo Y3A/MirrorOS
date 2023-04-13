@@ -3,11 +3,16 @@
 
 #include "types.h"
 
-#define PAGING_MAPPED         0b100000
-
-#define PAGING_USER_ACCESS    0b000100
+// hardware specific flags
+#define PAGING_PRESENT        0b000001
 #define PAGING_RDWR           0b000010
-#define PAGING_IS_PRESENT     0b000001
+#define PAGING_USER_ACCESS    0b000100
+#define PAGING_RESERVED       0b001000
+#define PAGING_CODE           0b010000
+
+// custom flags start from bit 9
+// https://wiki.osdev.org/Paging#Page_Directory
+#define PAGING_MAPPED         0b1000000000
 
 #define PAGING_PAGES_PER_PAGETABLE 1024
 #define PAGING_PAGETABLES_PER_PAGEDIR 1024

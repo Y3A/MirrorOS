@@ -9,6 +9,7 @@
 #include "idt/idt.h"
 #include "string/string.h"
 #include "task/process.h"
+#include "task/scheduler.h"
 #include "task/tss.h"
 #include "memory/paging/paging.h"
 #include "memory/heap/kheap.h"
@@ -60,7 +61,7 @@ VOID kernel_main(VOID)
     tss_load_tss(GDT_TSS_OFFSET);
     
     // setup paging
-    status = paging_new_pagedir(&kernel_pagedir, PAGING_IS_PRESENT);
+    status = paging_new_pagedir(&kernel_pagedir, PAGING_PRESENT | PAGING_RDWR);
     if (!MIRROR_SUCCESS(status))
         kernel_panic("[-] Paging Initialization Failed\n");
         
@@ -84,8 +85,6 @@ VOID kernel_main(VOID)
         if (!MIRROR_SUCCESS(status))
             kernel_panic("[-] VFS Mount Root Failed\n");
     }
-
-    __asm__("sti;"); // enable interrupts
 
     vga_print("[+] All Initialised\n");
 
@@ -126,9 +125,15 @@ VOID kernel_main(VOID)
     */
 
     PPROCESS process;
-    status = process_create_process("/testdir1/testdir2/testb.txt", &process);
+    status = process_create_process("/first_prog.bin", &process);
     if (!MIRROR_SUCCESS(status))
         vga_warn("ERROR");
+
+    vga_print("success\n");
+
+    scheduler_test_run();
+    vga_print("should not reach\n");
+
 
     while (1);
 }

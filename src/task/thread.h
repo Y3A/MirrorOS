@@ -3,8 +3,6 @@
 
 #include "types.h"
 
-#define DEFAULT_STACK_BASE 0x3ff000
-
 typedef enum
 {
     THREAD_RUNNING,
@@ -21,20 +19,20 @@ typedef enum
 typedef struct
 {
     // general purpose
-    DWORD eax;
-    DWORD ebx;
-    DWORD eci;
-    DWORD edx;
-    DWORD esi;
-    DWORD edi;
+    DWORD eax;    // 0
+    DWORD ebx;    // 4
+    DWORD ecx;    // 8
+    DWORD edx;    // 12
+    DWORD esi;    // 16
+    DWORD edi;    // 20
 
     // specific
-    DWORD eip;
-    DWORD ebp;
-    DWORD esp;
-    DWORD cs;
-    DWORD ss;
-    DWORD eflags;
+    DWORD eip;    // 24
+    DWORD ebp;    // 28
+    DWORD esp;    // 32
+    DWORD cs;     // 36
+    DWORD ss;     // 40
+    DWORD eflags; // 44
 } REGISTERS, *PREGISTERS;
 
 typedef struct _THREAD
@@ -46,7 +44,7 @@ typedef struct _THREAD
     WORD                tid;
     REGISTERS           regs;
     STATE               state;
-    PPROCESS            parent_process;
+    struct _PROCESS     *parent_process;
 
     // circular doubly linked list of all threads in the process
     struct _THREAD      *next;
@@ -56,7 +54,7 @@ typedef struct _THREAD
 
 PTHREAD thread_get_next_thread(PTHREAD thread);
 
-PTHREAD thread_create_thread(PPROCESS parent_process, SUBROUTINE start, THREAD_CREATE_OPTIONS options);
+PTHREAD thread_create_thread(struct _PROCESS *parent_process, SUBROUTINE start, THREAD_CREATE_OPTIONS options);
 void    thread_start_thread(PTHREAD thread);
 PTHREAD thread_shutdown_thread(PTHREAD thread);
 

@@ -4,9 +4,10 @@
 #define SYSTEM_PID             0
 
 #define MAX_PROCESS_NAME       255
-#define MAX_STACK_SIZE         16 * 1024 // 16kb
 #define DEFAULT_PROCESS_ENTRY  0x400000
 #define DEFAULT_STACK_BASE     0x3ff000
+#define ALT_STACK_START        0X1000000
+#define MAX_STACK_SIZE         16 * 1024 // 16kb
 
 #include "types.h"
 
@@ -15,6 +16,7 @@ typedef struct _PROCESS
     WORD                pid;
     CHAR                process_name[MAX_PROCESS_NAME + 1];
     PULONG              page_dir;
+    ULONG               available_stack_addr;
     // circular doubly linked list of threads
     struct _THREAD      *cur_thread;
 

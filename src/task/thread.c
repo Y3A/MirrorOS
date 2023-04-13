@@ -1,6 +1,9 @@
+#include "status.h"
+#include "gdt/gdt.h"
 #include "task/process.h"
 #include "task/thread.h"
 #include "memory/heap/kheap.h"
+#include "memory/paging/paging.h"
 
 PTHREAD thread_get_next_thread(PTHREAD thread)
 {
@@ -9,7 +12,12 @@ PTHREAD thread_get_next_thread(PTHREAD thread)
 
 PTHREAD thread_create_thread(PPROCESS parent_process, SUBROUTINE start, THREAD_CREATE_OPTIONS options)
 {
-    PTHREAD thread, prev;
+    PTHREAD         thread = NULL, prev;
+    ULONG           stack;
+    PVOID           data;
+    PULONG          pagedir = parent_process->page_dir;
+    DWORD           pages_to_commit;
+    MIRRORSTATUS    status;
     
     thread = kzalloc(sizeof(THREAD));
     if (!thread)
@@ -49,10 +57,39 @@ PTHREAD thread_create_thread(PPROCESS parent_process, SUBROUTINE start, THREAD_C
     else
         thread->tid = 0;
 
-    // allocate stack, use default if not mapped yet, else find another free address
+
+    // allocate stack
+    pages_to_commit = ((DWORD)MAX_STACK_SIZE / PAGING_PAGE_SZ);
+    stack = parent_process->available_stack_addr;
+    // update next available stack address for next thread
+    if (parent_process->available_stack_addr == (ULONG)DEFAULT_STACK_BASE)
+        parent_process->available_stack_addr = (ULONG)ALT_STACK_START;
+    else
+        parent_process->available_stack_addr += ((DWORD)MAX_STACK_SIZE + PAGING_PAGE_SZ);
+
+    for (int i = 0; i < pages_to_commit; i++) {
+        data = page_alloc();
+        if (!data) {
+            // no mem left
+            if (thread)
+                thread_shutdown_thread(thread);
+            return NULL;
+        }
+        status = paging_set_pagetable_entry(pagedir, (PVOID)((ULONG)stack - i * PAGING_PAGE_SZ),
+                                            (DWORD)data | PAGING_PRESENT | PAGING_RDWR | PAGING_USER_ACCESS);
+        if (!MIRROR_SUCCESS(status)) {
+            if (thread)
+                thread_shutdown_thread(thread);
+            return NULL;
+        }
+    }
 
     // set regs
-    
+    thread->regs.ss = GDT_USER_DATA;
+    thread->regs.cs = GDT_USER_CS;
+    thread->regs.eip = start;
+    thread->regs.esp = stack;
+    thread->regs.ebp = stack;
 
     return thread;
 }
