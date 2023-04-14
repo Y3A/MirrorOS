@@ -12,6 +12,6 @@ void scheduler_load_kernel_segments(void);
 void scheduler_run_thread(REGISTERS *regs);
 
 // test
-void scheduler_test_run(void);
+// void scheduler_test_run(void);
 
 #endif

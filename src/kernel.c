@@ -28,7 +28,7 @@ GDT_READABLE gdt_readable[GDT_TOTAL_SEGMENTS] = {
     { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_FLAG_KERNEL_DATA},
     { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_FLAG_USER_CODE},
     { .base = MEMORY_BASE, .limit = MEMORY_LIMIT, .flags = GDT_FLAG_USER_DATA},
-    { .base = (DWORD)&tss, .limit = sizeof(tss), .flags = GDT_FLAG_TSS}
+    { .base = (DWORD)&tss, .limit = sizeof(tss),  .flags = GDT_FLAG_TSS}
 };
 
 
@@ -37,6 +37,7 @@ VOID kernel_main(VOID)
     MIRRORSTATUS        status = STATUS_SUCCESS;
     PULONG              kernel_pagedir = NULL;
     PVOID               main_fs;
+    PPROCESS            idle_process;
 
     // initialise gdt
     gdt_readable_to_gdt_entry((PGDT_ENTRY)&gdt, (PGDT_READABLE)&gdt_readable, GDT_TOTAL_SEGMENTS);
@@ -86,54 +87,15 @@ VOID kernel_main(VOID)
             kernel_panic("[-] VFS Mount Root Failed\n");
     }
 
-    vga_print("[+] All Initialised\n");
-
-    /* tests
-    char *xx = kzalloc(0x20);
-    char *yy = kzalloc(0x60);
-    char *zz = kzalloc(0x123);
-    char *aa = kzalloc(0x31);
-    kfree(zz);
-    kfree(yy);
-    
-    char *bb = kzalloc(0x30);
-    char *cc = kzalloc(0x30);
-    char *dd = kzalloc(0x31);
-    char *ee = kzalloc(0x200);
-    kfree(cc);
-    kfree(dd);
-    kfree(xx);
-    kfree(aa);
-    kfree(bb);
-    kfree(ee);
-    CHAR buf[100];
-    FILE fd;
-    if (!MIRROR_SUCCESS(vfs_open("/testdir1/testdir2/testb.txt", &fd)))
-        vga_warn("Open error");
-    if (!MIRROR_SUCCESS(vfs_read(fd, (PBYTE)buf, 0, sizeof(buf))))
-        vga_warn("Read error");
-    else
-        vga_print((PCSTR)buf);
-
-    ULONG len = unbound_strlen((PCSTR)buf);
-    DWORD len2;
-    vfs_getsize(fd, &len2);
-    if (len == len2)
-        vga_print("success!\n");
-
-    vfs_close(fd);
-    */
-
-    PPROCESS process;
-    status = process_create_process("/first_prog.bin", &process);
+    // create idle process
+    status = process_create_process("/sys/idle.bin", &idle_process);
     if (!MIRROR_SUCCESS(status))
-        vga_warn("ERROR");
+        kernel_panic("[-] Idle Process Creation Failed\n");
 
-    vga_print("success\n");
+    // enable interrupts
+    __asm__("sti;");
 
-    scheduler_test_run();
-    vga_print("should not reach\n");
-
+    vga_print("[+] All Initialised\n");
 
     while (1);
 }

@@ -32,6 +32,7 @@ void scheduler_update_thread_regs(PINTERRUPT_FRAME frame)
     return;
 }
 
+/*
 void scheduler_test_run(void)
 {
     PPROCESS cur_proc = process_get_current_process();
@@ -39,3 +40,4 @@ void scheduler_test_run(void)
     paging_switch_pagedir(cur_proc->page_dir);
     scheduler_run_thread(&(cur_thread->regs));
 }
+*/

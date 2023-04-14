@@ -104,9 +104,9 @@ all: $(BINS) user_programs
 user_programs:
 	cd ./src/userland && $(MAKE) all
 	
-user_program_clean:
+user_programs_clean:
 	cd ./src/userland && $(MAKE) clean
 
-clean: user_program_clean
+clean: user_programs_clean
 	rm -rf $(BINS) ./bin/os.bin
 	rm -rf $(LINKS) ./build/kernelfull.o

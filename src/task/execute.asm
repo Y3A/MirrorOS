@@ -17,11 +17,8 @@ scheduler_run_thread:
     push dword [ebx+40]
     ; push esp
     push dword [ebx+32]
-    ; push eflags, enable interrupts
+    ; push eflags
     pushf
-    pop eax
-    or eax, 0x200
-    push eax
     ; push cs
     push dword [ebx+36]
     ; push eip

@@ -1,7 +1,30 @@
-all:
-	nasm -f elf -g ./first_prog.asm -o ../../build/userland/first_prog.asm.o
-	i686-elf-gcc -g -T ./linker.ld -o ../../build/userland/first_prog.bin -ffreestanding -O0 -nostdlib -fpic -g ../../build/userland/first_prog.asm.o
+
+PREFIX = ../..
+BINPREFIX = $(PREFIX)/bin/userland
+LINKPREFIX = $(PREFIX)/build/userland
+
+BINS =     $(BINPREFIX)/idle/idle.bin
+
+LINKS =    
+
+INCLUDES = -I.
+
+FLAGS =    -g -ffreestanding -falign-jumps -falign-functions -falign-labels
+FLAGS +=   -falign-loops -fstrength-reduce -fomit-frame-pointer -finline-functions
+FLAGS +=   -Wno-unused-function -fno-builtin -Werror -Wno-unused-label -Wno-cpp
+FLAGS +=   -Wno-unused-parameter -nostdlib -nostartfiles -nodefaultlibs -Wall -O0 -Iinc
+
+$(BINPREFIX)/idle/idle.bin: ./idle/idle.asm
+	nasm -f bin ./idle/idle.asm -o $(BINPREFIX)/idle/idle.bin
+
+all: $(BINS)
+	# mount filesystem and copy files
+	sudo mkdir -p /mnt/MirrorOS
+	sudo mount -t ext2 $(PREFIX)/bin/ext2fs /mnt/MirrorOS
+	mkdir -p /mnt/MirrorOS/sys/
+	cp $(BINPREFIX)/idle/idle.bin /mnt/MirrorOS/sys/idle.bin
+	sudo umount /mnt/MirrorOS
 
 clean:
-	rm -rf ../../build/userland/first_prog.asm.o
-	rm -rf ../../build/userland/first_prog.bin
+	rm -rf $(BINS)
+	rm -rf $(LINKS)
