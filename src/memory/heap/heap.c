@@ -259,6 +259,8 @@ VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
         // if merged back and merge with top, unlink back chunk
         {
             cur = *(PVOID *)free_bin_head;
+            // we walk the list as a security measure
+            // to verify integrity
             while (chunk_fd(cur) != *(PVOID *)free_bin_head)
             {
                 if (cur == chunk_addr) // topchunk_addr is now addr of merged chunk
@@ -326,15 +328,18 @@ VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
             *(PULONG)next_next_chunk_addr = new_next_chunk_sz;
 
             if (merged_back)
-            // needs unlinking
+            // needs unlinking, but doesn't need to update pointers
             {
                 cur = *(PVOID *)free_bin_head;
+                // we walk the list as a security measure
+                // to verify integrity
                 while (chunk_fd(cur) != *(PVOID *)free_bin_head)
                 {
                     if (cur == next_chunk_addr)
                     {
                         unlink(cur);
-                        // same reason as above
+                        // in the case where the unlinked chunk is the newest added chunk
+                        // we advance binhead
                         if ((ULONG)cur == *(PULONG)free_bin_head)
                             *(PULONG)free_bin_head = (ULONG)chunk_fd(cur);
                         break;
