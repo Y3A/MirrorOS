@@ -255,6 +255,25 @@ VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
     // if next chunk is top chunk, consolidate
     if ( (ULONG)chunk_addr + chunk_sz_nomask == (ULONG)topchunk_addr )
     {
+        if (merged_back)
+        // if merged back and merge with top, unlink back chunk
+        {
+            cur = *(PVOID *)free_bin_head;
+            while (chunk_fd(cur) != *(PVOID *)free_bin_head)
+            {
+                if (cur == chunk_addr) // topchunk_addr is now addr of merged chunk
+                {
+                    unlink(cur);
+                    // in the case where the unlinked chunk is the newest added chunk
+                    // we advance binhead
+                    if ((ULONG)cur == *(PULONG)free_bin_head)
+                        *(PULONG)free_bin_head = (ULONG)chunk_fd(cur);
+                    break;
+                }
+                cur = chunk_fd(cur);
+            }
+        }
+
         top_bk = chunk_bk(topchunk_addr);
         old_top_sz = chunksize_at_mem(topchunk_addr);
         new_top_sz = old_top_sz + chunk_sz_nomask;
@@ -277,21 +296,6 @@ VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
 
         chunk_set_size(new_top, new_top_sz);
         topchunk_addr = new_top;
-
-        if (merged_back)
-        // if merged back and merge with top, unlink back chunk
-        {
-            cur = *(PVOID *)free_bin_head;
-            while (chunk_fd(cur) != *(PVOID *)free_bin_head)
-            {
-                if (cur == topchunk_addr) // topchunk_addr is now addr of merged chunk
-                {
-                    unlink(cur);
-                    break;
-                }
-                cur = chunk_fd(cur);
-            }
-        }
 
         // we are done here, no forward consolidation, no bit unset
         return;
@@ -327,24 +331,28 @@ VOID heap_free(PVOID free_bin_head, PVOID chunk_addr)
                 cur = *(PVOID *)free_bin_head;
                 while (chunk_fd(cur) != *(PVOID *)free_bin_head)
                 {
-                    if (cur == new_next_chunk)
+                    if (cur == next_chunk_addr)
                     {
                         unlink(cur);
+                        // same reason as above
+                        if ((ULONG)cur == *(PULONG)free_bin_head)
+                            *(PULONG)free_bin_head = (ULONG)chunk_fd(cur);
                         break;
                     }
                     cur = chunk_fd(cur);
                 }
             }
+            else 
+            {
+                next_chunk_bk = chunk_bk(next_chunk_addr);
+                next_chunk_fd = chunk_fd(next_chunk_addr);
 
-            next_chunk_bk = chunk_bk(next_chunk_addr);
-            next_chunk_fd = chunk_fd(next_chunk_addr);
-
-            // update the fd and bk pointers to point to our enlarged free chunk
-            chunk_set_fd(next_chunk_bk, new_next_chunk);
-            chunk_set_bk(next_chunk_fd, new_next_chunk);
-            chunk_set_fd(new_next_chunk, next_chunk_fd);
-            chunk_set_bk(new_next_chunk, next_chunk_bk);
-
+                // update the fd and bk pointers to point to our enlarged free chunk
+                chunk_set_fd(next_chunk_bk, new_next_chunk);
+                chunk_set_bk(next_chunk_fd, new_next_chunk);
+                chunk_set_fd(new_next_chunk, next_chunk_fd);
+                chunk_set_bk(new_next_chunk, next_chunk_bk);
+            }
             chunk_set_size(new_next_chunk, (new_next_chunk_sz | PREV_INUSE));
             
             // now this is new cur chunk
